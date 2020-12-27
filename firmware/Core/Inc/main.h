@@ -32,7 +32,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "circular_buffers.h"
+#define SERIAL_DEBUG 0
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -57,6 +58,8 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
+extern UART_HandleTypeDef huart2;
+extern DMA_HandleTypeDef hdma_usart2_rx;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -89,6 +92,33 @@ void Error_Handler(void);
 #define LORA_RX_Pin GPIO_PIN_7
 #define LORA_RX_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
+
+/**
+ * Struct type that is sent to the queue
+ */
+typedef struct {
+	//circular_buffers_t *circular_buffer_addr;	/** address of the related circular buffer */
+	uint32_t start_index;						/** starting index of the circular buffer */
+	uint32_t length;							/** message length */
+} uart_data_t;
+
+/**
+ * Size of circular buffer
+ */
+#define PC_CIRCULAR_UART_BUFFER_SIZE (256)
+
+/**
+ * PC UART_HandleTypeDef
+ */
+#define HUART_PC				(huart2)
+/**
+ * PC DMA_HandleTypeDef
+ */
+#define HDMA_UART_PC			(hdma_usart2_rx)
+/**
+ * PC DMA Buffer length for receiver
+ */
+#define PC_RX_DMA_BUFFER_LEN	(512)
 
 /* USER CODE END Private defines */
 

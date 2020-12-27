@@ -46,8 +46,6 @@ ADC_HandleTypeDef hadc1;
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
 
-IWDG_HandleTypeDef hiwdg;
-
 SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim1;
@@ -93,7 +91,6 @@ static void MX_USART3_UART_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_IWDG_Init(void);
 void PeriodicTask(void const * argument);
 void GPSTask(void const * argument);
 void MotorControlTask(void const * argument);
@@ -151,7 +148,6 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI2_Init();
   MX_ADC1_Init();
-  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -187,19 +183,19 @@ int main(void)
 
   /* Create the queue(s) */
   /* definition and creation of pc_rx_q */
-  osMessageQDef(pc_rx_q, 16, uint32_t);
+  osMessageQDef(pc_rx_q, 16, uart_data_t);
   pc_rx_qHandle = osMessageCreate(osMessageQ(pc_rx_q), NULL);
 
   /* definition and creation of pc_tx_q */
-  osMessageQDef(pc_tx_q, 16, uint32_t);
+  osMessageQDef(pc_tx_q, 16, uart_data_t);
   pc_tx_qHandle = osMessageCreate(osMessageQ(pc_tx_q), NULL);
 
   /* definition and creation of lora_rx_q */
-  osMessageQDef(lora_rx_q, 16, uint32_t);
+  osMessageQDef(lora_rx_q, 16, uart_data_t);
   lora_rx_qHandle = osMessageCreate(osMessageQ(lora_rx_q), NULL);
 
   /* definition and creation of lora_tx_q */
-  osMessageQDef(lora_tx_q, 16, uint32_t);
+  osMessageQDef(lora_tx_q, 16, uart_data_t);
   lora_tx_qHandle = osMessageCreate(osMessageQ(lora_tx_q), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
@@ -253,6 +249,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+	HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -283,11 +280,10 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
@@ -392,34 +388,6 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief IWDG Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_IWDG_Init(void)
-{
-
-  /* USER CODE BEGIN IWDG_Init 0 */
-
-  /* USER CODE END IWDG_Init 0 */
-
-  /* USER CODE BEGIN IWDG_Init 1 */
-
-  /* USER CODE END IWDG_Init 1 */
-  hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_8;
-  hiwdg.Init.Reload = 4095;
-  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN IWDG_Init 2 */
-
-  /* USER CODE END IWDG_Init 2 */
 
 }
 

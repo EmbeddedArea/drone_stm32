@@ -23,6 +23,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "cmsis_os.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,7 +67,7 @@ extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN EV */
-
+extern osSemaphoreId pc_rx_smphrHandle;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -158,6 +159,7 @@ void TIM4_IRQHandler(void)
   /* USER CODE BEGIN TIM4_IRQn 0 */
 
   /* USER CODE END TIM4_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim4);
   /* USER CODE BEGIN TIM4_IRQn 1 */
 
   /* USER CODE END TIM4_IRQn 1 */
@@ -197,7 +199,10 @@ void USART1_IRQHandler(void)
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
-
+	if (__HAL_UART_GET_IT_SOURCE(&HUART_PC, UART_IT_IDLE) && __HAL_UART_GET_FLAG(&HUART_PC, UART_FLAG_IDLE)){
+		__HAL_UART_CLEAR_IDLEFLAG(&HUART_PC);
+		osSemaphoreRelease(pc_rx_smphrHandle);	/** Goes into PCRxManager task*/
+	}
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
   /* USER CODE BEGIN USART2_IRQn 1 */
