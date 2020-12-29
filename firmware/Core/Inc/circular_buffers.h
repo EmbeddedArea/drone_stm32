@@ -40,7 +40,7 @@ typedef struct {
  * @param size length of data to be written in bytes
  * @retval 1 for successful writing
  */
-circular_status_t circular_write(circular_buffers_t *circular, uint8_t *source_buffer, uint32_t size);
+circular_status_t circular_write(circular_buffers_t *circular, const uint8_t *source_buffer, uint32_t size);
 
 /**
  * @brief This function reads the circular buffer and copies to the dest buffer at a number of size

@@ -105,7 +105,7 @@ typedef struct {
 /**
  * Size of circular buffer
  */
-#define PC_CIRCULAR_UART_BUFFER_SIZE (256)
+#define PC_CIRCULAR_UART_BUFFER_SIZE (100)
 
 /**
  * PC UART_HandleTypeDef

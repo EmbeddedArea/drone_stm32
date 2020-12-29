@@ -12,6 +12,7 @@
 #include "stdio.h"
 #include "circular_buffers.h"
 
+
 extern osMessageQId pc_tx_qHandle;	/** Queue for TX synchronization */
 extern osMessageQId pc_rx_qHandle;	/** Queue for RX synchronization */
 extern osSemaphoreId pc_rx_smphrHandle;
@@ -20,24 +21,10 @@ extern osSemaphoreId pc_rx_smphrHandle;
 uint8_t pc_rx_dma_buffer[PC_RX_DMA_BUFFER_LEN]; 			/** \brief An array for storing data coming from Uart DMA */
 
 uint8_t uart_pc_circular[PC_CIRCULAR_UART_BUFFER_SIZE]; 	/** \brief Static array for storing data coming from uart */
+uint8_t uart_to_pc_circular[PC_CIRCULAR_UART_BUFFER_SIZE]; 	/** \brief Static array for writing data to uart */
 
 /**
- * @brief This function handles the parsing and transmitting processes.
- * @param format: message format to be sent
- * @retval None
- */
-void send_message_to_pc(const char * format, ... )
-{
-	va_list ap;
-	uint8_t buffer [128];
-	va_start(ap, format);
-	int len = vsnprintf ((char*)buffer, 128, format, ap);
-	va_end(ap);
-	HAL_UART_Transmit(&HUART_PC, (uint8_t*)buffer, len, 0xFF);
-}
-
-/** \brief circular_buf_pc
- *
+ * circular_buf_pc
  */
 circular_buffers_t circular_buf_pc = {
 		.size = PC_CIRCULAR_UART_BUFFER_SIZE,
@@ -46,6 +33,53 @@ circular_buffers_t circular_buf_pc = {
 		.remaining_length = PC_CIRCULAR_UART_BUFFER_SIZE,
 		.data = uart_pc_circular
 };
+
+/**
+ * circular_buf_to_pc
+ */
+circular_buffers_t circular_buf_to_pc = {
+		.size = PC_CIRCULAR_UART_BUFFER_SIZE,
+		.head = 0,
+		.tail = 0,
+		.remaining_length = PC_CIRCULAR_UART_BUFFER_SIZE,
+		.data = uart_to_pc_circular
+};
+
+
+/**
+ * @brief This function handles the parsing and transmitting processes.
+ * @param format: message format to be sent
+ * @retval None
+ */
+void send_message_to_pc(const char * buffer )
+{
+	uart_data_t struct_for_queue;
+	//Fill inside the received_frame struct
+	struct_for_queue.start_index = circular_buf_to_pc.head;
+	struct_for_queue.length = strlen(buffer);
+	if(circular_write(&circular_buf_to_pc, (const uint8_t *) buffer, strlen(buffer)) == CIRC_WRITE_SUCCESS){
+		if(xQueueSend(pc_tx_qHandle, (void *) &struct_for_queue, (TickType_t) 10) != pdPASS){	//Try sending to queue
+			// If sending queue is failed, then remove the written buffer from circular buffer
+			circular_buf_to_pc.remaining_length += struct_for_queue.length;
+			circular_buf_to_pc.head = struct_for_queue.start_index;
+#if SERIAL_DEBUG
+			uint8_t text[50];
+			// Failed to post the message, even after 10 ticks.
+			memset(text, 0, 50);
+			sprintf((char *) text, "Too busy... Failed to send to pc_tx_qHandle\n");
+			HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+		}
+		else {	//Sending queue is successful
+#if SERIAL_DEBUG
+			uint8_t text[50];
+			memset(text, 0, 50);
+			sprintf((char *) text, "Queue to PC sent start_index:%d length:%d\n", (int) struct_for_queue.start_index, (int) struct_for_queue.length);
+			HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+		}
+	}
+}
 
 
 /**
@@ -152,12 +186,16 @@ void PCRxManager(void const * argument)
 void PCTxManager(void const * argument)
 {
 	uart_data_t task_received;
+	uint8_t received_command[30];
 #if SERIAL_DEBUG
 	uint8_t text[100];
 #endif
 	for(;;)
 	{
 		xQueueReceive(pc_tx_qHandle, (void *) &task_received, osWaitForever);
+		if(circular_read_from(&circular_buf_to_pc, received_command, task_received.start_index, task_received.length) == CIRC_READ_SUCCESS) {
+			HAL_UART_Transmit(&HUART_PC, (uint8_t*)received_command, task_received.length, 0xFF);
+		}
 	}
 }
 
@@ -170,28 +208,28 @@ void PCTxManager(void const * argument)
 void PcCommunicationManager(void const * argument)
 {
 	uint8_t received_command[30];
-	uint8_t data_to_send[30];
 	uart_data_t msg_received;
-	uart_data_t struct_for_queue;
+
 	for(;;)
 	{
 		xQueueReceive(pc_rx_qHandle, (void *) &msg_received, osWaitForever);
 		if(circular_read_from(&circular_buf_pc, received_command, msg_received.start_index, msg_received.length) == CIRC_READ_SUCCESS) {
 			//Incoming commands are being examined
 			switch(received_command[0]){
-				case 'a': {
+			case 'a': {
 
-					break;
-				}
-				case 'b': {
+				send_message_to_pc("a case");
+				break;
+			}
+			case 'b': {
 
-					break;
-				}
-				default:{	// Unknown command
-					//Fill inside the received_frame struct
-					memcpy(data_to_send, received_command, msg_received.length);
-					break;
-				}
+				send_message_to_pc("b case");
+				break;
+			}
+			default:{	// Unknown command
+				send_message_to_pc("default case");
+				break;
+			}
 			}
 
 		}

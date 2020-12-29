@@ -20,7 +20,7 @@
  * @param size: length of data to be written in bytes
  * @retval 1 for successful writing
  */
-circular_status_t circular_write(circular_buffers_t *circular, uint8_t *source_buffer, uint32_t size){
+circular_status_t circular_write(circular_buffers_t *circular, const uint8_t *source_buffer, uint32_t size){
 	/* Check if the circular buffer is empty enough */
 	if(circular->remaining_length >= size){
 		do {
