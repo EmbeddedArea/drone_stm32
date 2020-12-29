@@ -12,7 +12,6 @@
 #include "stdio.h"
 #include "circular_buffers.h"
 
-
 extern osMessageQId pc_tx_qHandle;	/** Queue for TX synchronization */
 extern osMessageQId pc_rx_qHandle;	/** Queue for RX synchronization */
 extern osSemaphoreId pc_rx_smphrHandle;
@@ -22,6 +21,20 @@ uint8_t pc_rx_dma_buffer[PC_RX_DMA_BUFFER_LEN]; 			/** \brief An array for stori
 
 uint8_t uart_pc_circular[PC_CIRCULAR_UART_BUFFER_SIZE]; 	/** \brief Static array for storing data coming from uart */
 
+/**
+ * @brief This function handles the parsing and transmitting processes.
+ * @param format: message format to be sent
+ * @retval None
+ */
+void send_message_to_pc(const char * format, ... )
+{
+	va_list ap;
+	uint8_t buffer [128];
+	va_start(ap, format);
+	int len = vsnprintf ((char*)buffer, 128, format, ap);
+	va_end(ap);
+	HAL_UART_Transmit(&HUART_PC, (uint8_t*)buffer, len, 0xFF);
+}
 
 /** \brief circular_buf_pc
  *
@@ -67,6 +80,9 @@ void PCRxManager(void const * argument)
 				struct_for_queue.length = rx_buffer_new_index - rx_buffer_old_index;
 				if(circular_write(&circular_buf_pc, (pc_rx_dma_buffer + rx_buffer_old_index), rx_buffer_new_index - rx_buffer_old_index) == CIRC_WRITE_SUCCESS){
 					if(xQueueSend(pc_rx_qHandle, (void *) &struct_for_queue, (TickType_t) 10) != pdPASS){	//Try sending to queue
+						// If sending queue is failed, then remove the written buffer from circular buffer
+						circular_buf_pc.remaining_length += struct_for_queue.length;
+						circular_buf_pc.head = struct_for_queue.start_index;
 #if SERIAL_DEBUG
 						// Failed to post the message, even after 10 ticks.
 						memset(text, 0, 100);
@@ -156,13 +172,28 @@ void PcCommunicationManager(void const * argument)
 	uint8_t received_command[30];
 	uint8_t data_to_send[30];
 	uart_data_t msg_received;
-
+	uart_data_t struct_for_queue;
 	for(;;)
 	{
 		xQueueReceive(pc_rx_qHandle, (void *) &msg_received, osWaitForever);
 		if(circular_read_from(&circular_buf_pc, received_command, msg_received.start_index, msg_received.length) == CIRC_READ_SUCCESS) {
-			memcpy(data_to_send, received_command, msg_received.length);
-			HAL_UART_Transmit(&HUART_PC, (uint8_t *) data_to_send, msg_received.length, 0xFF);
+			//Incoming commands are being examined
+			switch(received_command[0]){
+				case 'a': {
+
+					break;
+				}
+				case 'b': {
+
+					break;
+				}
+				default:{	// Unknown command
+					//Fill inside the received_frame struct
+					memcpy(data_to_send, received_command, msg_received.length);
+					break;
+				}
+			}
+
 		}
 		else {
 #if SERIAL_DEBUG

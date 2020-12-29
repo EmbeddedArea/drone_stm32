@@ -15,9 +15,9 @@
 /**
  * @brief This function writes the given buffer to the circular buffer at a number of size
  * Writing starts from head
- * @param circular address of circular buffer
- * @param source_buffer address of source buffer where the data is copied
- * @param size length of data to be written in bytes
+ * @param circular: address of circular buffer
+ * @param source_buffer: address of source buffer where the data is copied
+ * @param size: length of data to be written in bytes
  * @retval 1 for successful writing
  */
 circular_status_t circular_write(circular_buffers_t *circular, uint8_t *source_buffer, uint32_t size){
@@ -39,9 +39,9 @@ circular_status_t circular_write(circular_buffers_t *circular, uint8_t *source_b
 /**
  * @brief This function reads the circular buffer and copies to the dest buffer at a number of size
  * Reading starts from tail
- * @param circular address of circular buffer
- * @param dest_buffer address of destination buffer where the data is copied
- * @param size length of data to be copied in bytes
+ * @param circular: address of circular buffer
+ * @param dest_buffer: address of destination buffer where the data is copied
+ * @param size: length of data to be copied in bytes
  * @retval 1 for successful reading
  */
 circular_status_t circular_read(circular_buffers_t *circular, uint8_t *dest_buffer, uint32_t size){
@@ -56,10 +56,10 @@ circular_status_t circular_read(circular_buffers_t *circular, uint8_t *dest_buff
 /**
  * @brief This function reads the circular buffer from the given index and copies to the dest buffer at a number of size
  * Reading starts from given index
- * @param circular address of circular buffer
- * @param dest_buffer address of destination buffer where the data is copied
- * @param starting_index index of destination buffer where the data copying starts
- * @param size length of data to be copied in bytes
+ * @param circular: address of circular buffer
+ * @param dest_buffer: address of destination buffer where the data is copied
+ * @param starting_index: index of destination buffer where the data copying starts
+ * @param size: length of data to be copied in bytes
  * @retval 1 for successful reading
  */
 circular_status_t circular_read_from(circular_buffers_t *circular, uint8_t *dest_buffer, uint32_t starting_index, uint32_t size){
