@@ -20,7 +20,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-
+#include "mpu9250.h"
+#include "string.h"
+#include "stdio.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -249,9 +251,23 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-	HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
+	//HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
   /* USER CODE END RTOS_THREADS */
+	HAL_UART_Transmit(&HUART_PC, (uint8_t *) "init", 4, 0xFF);
 
+	MPU_Init();
+
+	uint8_t text[50];
+	int16_t AccData[3], GyroData[3], MagData[3], Temp;
+	while(1){
+		MPU_GetData(AccData, GyroData, MagData, &Temp);// combine into 16 bit values
+		memset(text, 0, 50);
+		sprintf((char *) text,"Temp:%04d %04d %04d %04d\n", (int16_t)Temp, (int16_t)AccData[0], (int16_t)AccData[1], (int16_t)AccData[2]);
+		//(int16_t)GyroData[0], (int16_t)GyroData[1], (int16_t)GyroData[2]);
+		//(int16_t)MagData[0], (int16_t)MagData[1], (int16_t)MagData[2]);
+		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+		HAL_Delay(100);
+	}
   /* Start scheduler */
   osKernelStart();
 
