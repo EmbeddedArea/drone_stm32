@@ -20,12 +20,16 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
-#include "mpu9250.h"
 #include "string.h"
 #include "stdio.h"
+//#include "newMpu.h"
+#include "mpu9250.h"
+extern int16_t _axcounts,_aycounts,_azcounts;
+extern int16_t _gxcounts,_gycounts,_gzcounts;
+extern int16_t _hxcounts,_hycounts,_hzcounts;
+extern int16_t _tcounts;
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -253,21 +257,84 @@ int main(void)
   /* add threads, ... */
 	//HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
   /* USER CODE END RTOS_THREADS */
-	HAL_UART_Transmit(&HUART_PC, (uint8_t *) "init", 4, 0xFF);
 
-	MPU_Init();
 
 	uint8_t text[50];
-	int16_t AccData[3], GyroData[3], MagData[3], Temp;
+
+	HAL_UART_Transmit(&HUART_PC, (uint8_t *) "init", 4, 0xFF);
+
+	int ret = mpu_init();
+
+	memset(text, 0, 50);
+	sprintf((char *) text,"mpu_init:: %d\n", ret);
+	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+
+	int who = whoAmI();
+
+	memset(text, 0, 50);
+	sprintf((char *) text,"WhoAmI:: %d\n", who);
+	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+
+	who = whoAmIAK8963();
+
+	memset(text, 0, 50);
+	sprintf((char *) text,"whoAmIAK8963:: %d\n", who);
+	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+
 	while(1){
-		MPU_GetData(AccData, GyroData, MagData, &Temp);// combine into 16 bit values
+		readSensor();
 		memset(text, 0, 50);
-		sprintf((char *) text,"Temp:%04d %04d %04d %04d\n", (int16_t)Temp, (int16_t)AccData[0], (int16_t)AccData[1], (int16_t)AccData[2]);
+		sprintf((char *) text,"Y:%d P:%d R:%d \n", (int)(100.0*getAccelX_mss()), (int)(100.0*getGyroX_rads()), (int)(100.0*getMagX_uT()));
+		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+		delay(100);
+	}
+
+#if 0
+	int16_t AccData[3], GyroData[3], MagData[3], Temp;
+	float ax, ay, az, gx, gy, gz, mx, my, mz;
+	float pitch, yaw, roll;
+	int counter = 0;
+	uint32_t timeDelta;
+	timeDelta = HAL_GetTick();
+	while(1){
+		//MPU_GetData(AccData, GyroData, MagData, &Temp);// combine into 16 bit values
+		ax = (float)AccData[0]*16.0/32768.0;
+		ay = (float)AccData[1]*16.0/32768.0;
+		az = (float)AccData[2]*16.0/32768.0;
+
+		gx = (float)GyroData[0]*2000.0/32768.0;
+		gy = (float)GyroData[1]*2000.0/32768.0;
+		gz = (float)GyroData[2]*2000.0/32768.0;
+
+		mx = (float)MagData[0]* 10.0*4912.0/32760.0;
+		my = (float)MagData[1]* 10.0*4912.0/32760.0;
+		mz = (float)MagData[2]* 10.0*4912.0/32760.0;
+
+		timeDelta = HAL_GetTick() - timeDelta;
+		deltat = 5.00f;
+
+		MahonyQuaternionUpdate(ax, ay, az, gx*M_PI/180.0f, gy*M_PI/180.0f, gz*M_PI/180.0f, my, mx, mz);
+
+	    yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
+	    pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
+	    roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+	    pitch *= 180.0f / M_PI;
+	    yaw   *= 180.0f / M_PI;
+	    yaw   -= 13.8; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
+	    roll  *= 180.0f / M_PI;
+
+	    counter++;
+	    if(counter > 20){
+		memset(text, 0, 50);
+		sprintf((char *) text,"Y:%04d P:%04d R:%04d Delta:%d\n", (int16_t)(yaw*100.0), (int16_t)(pitch*100.0), (int16_t)(roll*100.0), (int)(deltat*1000.0));
 		//(int16_t)GyroData[0], (int16_t)GyroData[1], (int16_t)GyroData[2]);
 		//(int16_t)MagData[0], (int16_t)MagData[1], (int16_t)MagData[2]);
 		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-		HAL_Delay(100);
+		counter = 0;
+	    }
+		HAL_Delay(5);
 	}
+#endif
   /* Start scheduler */
   osKernelStart();
 

@@ -303,4 +303,3 @@ VP_SYS_VS_ND.Signal=SYS_VS_ND
 VP_SYS_VS_tim4.Mode=TIM4
 VP_SYS_VS_tim4.Signal=SYS_VS_tim4
 board=custom
-isbadioc=false
