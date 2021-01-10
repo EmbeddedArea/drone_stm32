@@ -87,27 +87,10 @@ const float _d2r = 3.14159265359f/180.0f;
 /*************************
  *  STATIC FUNCTION PROTOTYPES
  *************************/
-static void spi_enable();
-static void spi_disable();
 static int writeRegister(uint8_t subAddress, uint8_t data);
 static int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
 static int writeAK8963Register(uint8_t subAddress, uint8_t data);
 static int readAK8963Registers(uint8_t subAddress, uint8_t count, uint8_t* dest);
-
-
-/**spi_enable
- * Enables SPI transaction by writing 0 to Chip Select pin
- */
-static void spi_enable(){
-	HAL_GPIO_WritePin(MPU9250_CS_GPIO, MPU9250_CS_PIN, GPIO_PIN_RESET);
-}
-
-/**spi_disable
- * Disables SPI transaction by writing 1 to Chip Select pin
- */
-static void spi_disable(){
-	HAL_GPIO_WritePin(MPU9250_CS_GPIO, MPU9250_CS_PIN, GPIO_PIN_SET);
-}
 
 /**
  *
@@ -120,9 +103,11 @@ static int writeRegister(uint8_t subAddress, uint8_t data){
 	uint8_t data_to_send[2];
 	data_to_send[0] = subAddress;
 	data_to_send[1] = data;
-	spi_enable();
-	HAL_SPI_Transmit(&MPU9250_SPI, data_to_send, 2, HAL_MAX_DELAY);
-	spi_disable();
+
+	HAL_I2C_Master_Transmit(&MPU9250_I2C, MPU_I2C_ADDRESS, data_to_send, 2, 0xFF);
+
+	delay(10);
+
 	/* read back the register */
 	readRegisters(subAddress,1,_buffer);
 	/* check the read back register against the written register */
@@ -142,14 +127,8 @@ static int writeRegister(uint8_t subAddress, uint8_t data){
  * @return
  */
 static int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest){
-	uint8_t data_to_send;
-	data_to_send = subAddress | SPI_READ;
-
-	spi_enable();
-	HAL_SPI_Transmit(&MPU9250_SPI, &data_to_send, 1, HAL_MAX_DELAY);
-	HAL_SPI_Receive(&MPU9250_SPI, dest, count, HAL_MAX_DELAY);
-	spi_disable();
-
+	HAL_I2C_Master_Transmit(&MPU9250_I2C, MPU_I2C_ADDRESS, &subAddress, 1, 0xFF);
+	HAL_I2C_Master_Receive(&MPU9250_I2C, MPU_I2C_ADDRESS, dest, count, 0xFF);
 	return 1;
 }
 
@@ -207,7 +186,7 @@ static int readAK8963Registers(uint8_t subAddress, uint8_t count, uint8_t* dest)
 	if (writeRegister(I2C_SLV0_CTRL,I2C_SLV0_EN | count) < 0) {
 		return -3;
 	}
-	HAL_Delay(2);
+	delay(1);
 	// read the bytes off the MPU9250 EXT_SENS_DATA registers
 	_status = readRegisters(EXT_SENS_DATA_00,count,dest);
 	return _status;
@@ -311,6 +290,8 @@ int mpu_init(){
 	}
 	delay(100); // long wait between AK8963 mode changes
 	// set AK8963 to FUSE ROM access
+
+	return writeAK8963Register(AK8963_CNTL1,AK8963_FUSE_ROM);
 	if(writeAK8963Register(AK8963_CNTL1,AK8963_FUSE_ROM) < 0){
 		return -16;
 	}
@@ -330,6 +311,7 @@ int mpu_init(){
 		return -18;
 	}
 	delay(100); // long wait between AK8963 mode changes
+
 	// select clock source to gyro
 	if(writeRegister(PWR_MGMNT_1,CLOCK_SEL_PLL) < 0){
 		return -19;
@@ -337,7 +319,7 @@ int mpu_init(){
 	// instruct the MPU9250 to get 7 bytes of data from the AK8963 at the sample rate
 	readAK8963Registers(AK8963_HXL,7,_buffer);
 	// estimate gyro bias
-	if (calibrateGyro() < 0) {	//todo:
+	if (calibrateGyro() < 0) {
 		return -20;
 	}
 	// successful init, return 1

@@ -19,7 +19,7 @@ extern "C" {
 #include "main.h"
 #include "stdint.h"
 
-extern SPI_HandleTypeDef hspi2;
+extern I2C_HandleTypeDef hi2c1;
 
 
 /**********************
@@ -27,10 +27,8 @@ extern SPI_HandleTypeDef hspi2;
  **********************/
 #define delay(x) (HAL_Delay(x))
 
-#define MPU9250_SPI			hspi2
-#define	MPU9250_CS_GPIO		SPI_CS_GPIO_Port
-#define	MPU9250_CS_PIN		SPI_CS_Pin
-
+#define MPU9250_I2C			hi2c1
+#define MPU_I2C_ADDRESS		0x68<<1
 
 
 /**********************
@@ -164,17 +162,18 @@ typedef enum
 #define FIFO_READ   0x74
 
 // AK8963 registers
-#define AK8963_I2C_ADDR   0x0C
-#define AK8963_HXL   0x03
-#define AK8963_CNTL1   0x0A
-#define AK8963_PWR_DOWN   0x00
-#define AK8963_CNT_MEAS1   0x12
-#define AK8963_CNT_MEAS2   0x16
-#define AK8963_FUSE_ROM   0x0F
-#define AK8963_CNTL2   0x0B
-#define AK8963_RESET   0x01
-#define AK8963_ASA   0x10
-#define AK8963_WHO_AM_I   0x00
+#define AK8963_I2C_ADDR   	0x0C
+#define AK8963_ST1   		0x02
+#define AK8963_HXL   		0x03
+#define AK8963_CNTL1   		0x0A
+#define AK8963_PWR_DOWN   	0x00
+#define AK8963_CNT_MEAS1   	0x12
+#define AK8963_CNT_MEAS2   	0x16
+#define AK8963_FUSE_ROM   	0x0F
+#define AK8963_CNTL2   		0x0B
+#define AK8963_RESET   		0x01
+#define AK8963_ASA   		0x10
+#define AK8963_WHO_AM_I   	0x00
 
 
 /*************************
@@ -208,7 +207,6 @@ float getGyroBiasZ_rads();
 void setGyroBiasX_rads(float bias);
 void setGyroBiasY_rads(float bias);
 void setGyroBiasZ_rads(float bias);
-
 
 #ifdef __cplusplus
 }

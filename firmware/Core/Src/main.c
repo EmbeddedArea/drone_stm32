@@ -20,6 +20,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
+
 #include "string.h"
 #include "stdio.h"
 //#include "newMpu.h"
@@ -28,8 +32,6 @@ extern int16_t _axcounts,_aycounts,_azcounts;
 extern int16_t _gxcounts,_gycounts,_gzcounts;
 extern int16_t _hxcounts,_hycounts,_hzcounts;
 extern int16_t _tcounts;
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,8 +53,6 @@ ADC_HandleTypeDef hadc1;
 
 I2C_HandleTypeDef hi2c1;
 DMA_HandleTypeDef hdma_i2c1_rx;
-
-SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim1;
 
@@ -95,7 +95,6 @@ static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_SPI2_Init(void);
 static void MX_ADC1_Init(void);
 void PeriodicTask(void const * argument);
 void GPSTask(void const * argument);
@@ -152,7 +151,6 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_I2C1_Init();
-  MX_SPI2_Init();
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
@@ -256,8 +254,6 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
 	//HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
-  /* USER CODE END RTOS_THREADS */
-
 
 	uint8_t text[50];
 
@@ -289,52 +285,8 @@ int main(void)
 		delay(100);
 	}
 
-#if 0
-	int16_t AccData[3], GyroData[3], MagData[3], Temp;
-	float ax, ay, az, gx, gy, gz, mx, my, mz;
-	float pitch, yaw, roll;
-	int counter = 0;
-	uint32_t timeDelta;
-	timeDelta = HAL_GetTick();
-	while(1){
-		//MPU_GetData(AccData, GyroData, MagData, &Temp);// combine into 16 bit values
-		ax = (float)AccData[0]*16.0/32768.0;
-		ay = (float)AccData[1]*16.0/32768.0;
-		az = (float)AccData[2]*16.0/32768.0;
+  /* USER CODE END RTOS_THREADS */
 
-		gx = (float)GyroData[0]*2000.0/32768.0;
-		gy = (float)GyroData[1]*2000.0/32768.0;
-		gz = (float)GyroData[2]*2000.0/32768.0;
-
-		mx = (float)MagData[0]* 10.0*4912.0/32760.0;
-		my = (float)MagData[1]* 10.0*4912.0/32760.0;
-		mz = (float)MagData[2]* 10.0*4912.0/32760.0;
-
-		timeDelta = HAL_GetTick() - timeDelta;
-		deltat = 5.00f;
-
-		MahonyQuaternionUpdate(ax, ay, az, gx*M_PI/180.0f, gy*M_PI/180.0f, gz*M_PI/180.0f, my, mx, mz);
-
-	    yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
-	    pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
-	    roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
-	    pitch *= 180.0f / M_PI;
-	    yaw   *= 180.0f / M_PI;
-	    yaw   -= 13.8; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
-	    roll  *= 180.0f / M_PI;
-
-	    counter++;
-	    if(counter > 20){
-		memset(text, 0, 50);
-		sprintf((char *) text,"Y:%04d P:%04d R:%04d Delta:%d\n", (int16_t)(yaw*100.0), (int16_t)(pitch*100.0), (int16_t)(roll*100.0), (int)(deltat*1000.0));
-		//(int16_t)GyroData[0], (int16_t)GyroData[1], (int16_t)GyroData[2]);
-		//(int16_t)MagData[0], (int16_t)MagData[1], (int16_t)MagData[2]);
-		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-		counter = 0;
-	    }
-		HAL_Delay(5);
-	}
-#endif
   /* Start scheduler */
   osKernelStart();
 
@@ -456,7 +408,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -471,44 +423,6 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief SPI2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI2_Init(void)
-{
-
-  /* USER CODE BEGIN SPI2_Init 0 */
-
-  /* USER CODE END SPI2_Init 0 */
-
-  /* USER CODE BEGIN SPI2_Init 1 */
-
-  /* USER CODE END SPI2_Init 1 */
-  /* SPI2 parameter configuration*/
-  hspi2.Instance = SPI2;
-  hspi2.Init.Mode = SPI_MODE_MASTER;
-  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
-  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi2.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI2_Init 2 */
-
-  /* USER CODE END SPI2_Init 2 */
 
 }
 
@@ -733,17 +647,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SPI_CS_Pin|LORA_M1_Pin|LORA_M0_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(DEBUG_LED_GPIO_Port, DEBUG_LED_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : SPI_CS_Pin LORA_M1_Pin LORA_M0_Pin */
-  GPIO_InitStruct.Pin = SPI_CS_Pin|LORA_M1_Pin|LORA_M0_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, LORA_M1_Pin|LORA_M0_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : DEBUG_LED_Pin */
   GPIO_InitStruct.Pin = DEBUG_LED_Pin;
@@ -757,6 +664,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(LORA_AUX_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : LORA_M1_Pin LORA_M0_Pin */
+  GPIO_InitStruct.Pin = LORA_M1_Pin|LORA_M0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 
