@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "math.h"
 #include "string.h"
 #include "stdio.h"
 //#include "newMpu.h"
@@ -277,8 +277,34 @@ int main(void)
 	sprintf((char *) text,"whoAmIAK8963:: %d\n", who);
 	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
 
+	const float alpha = 0.5;
+
+	double fXg = 0;
+	double fYg = 0;
+	double fZg = 0;
+
+	double pitch, roll, Xg, Yg, Zg;
+
 	while(1){
 		readSensor();
+
+		Xg = getAccelX_mss();
+		Yg = getAccelY_mss();
+		Zg = getAccelZ_mss();
+
+		//Low Pass Filter
+		fXg = Xg * alpha + (fXg * (1.0 - alpha));
+		fYg = Yg * alpha + (fYg * (1.0 - alpha));
+		fZg = Zg * alpha + (fZg * (1.0 - alpha));
+
+		//Roll & Pitch Equations
+		roll  = (atan2(-fYg, fZg)*180.0)/M_PI;
+		pitch = (atan2(fXg, sqrt(fYg*fYg + fZg*fZg))*180.0)/M_PI;
+
+		memset(text, 0, 50);
+		sprintf((char *) text,"Roll:%05d:Pitch:%05d:\n", (int)(100.0*roll), (int)(100.0*pitch));
+		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+		/*
 		memset(text, 0, 50);
 		sprintf((char *) text,"Ax:%05d Ay:%05d Az:%05d - ", _axcounts, _aycounts, _azcounts);
 		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
@@ -288,7 +314,7 @@ int main(void)
 		memset(text, 0, 50);
 		sprintf((char *) text,"Mx:%05d My:%05d Mz:%05d \n", _hxcounts, _hycounts, _hzcounts);
 		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-
+		 */
 		delay(100);
 	}
 
