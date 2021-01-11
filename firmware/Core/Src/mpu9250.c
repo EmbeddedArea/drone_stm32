@@ -105,7 +105,7 @@ static int writeRegister(uint8_t subAddress, uint8_t data){
 	delay(10);
 
 	/* read back the register */
-	readRegisters(subAddress,1,_buffer);
+	readRegisters(subAddress, 1, _buffer);
 	/* check the read back register against the written register */
 	if(_buffer[0] == data) {
 		return 1;
@@ -331,10 +331,9 @@ int mpu_init(){
 	// instruct the MPU9250 to get 7 bytes of data from the AK8963 at the sample rate
 	readAK8963Registers(AK8963_HXL, 7, _buffer);
 	// estimate gyro bias
-	/*if (calibrateGyro() < 0) {
+	if (calibrateGyro() < 0) {
 		return -20;
 	}
-	calibrateMagneto();*/
 	// successful init, return 1
 	return 1;
 }
@@ -345,8 +344,8 @@ int mpu_init(){
  * @return
  */
 int readSensor() {
-	// grab the data from the MPU9250
-	if (readRegisters(ACCEL_OUT, 21, _buffer) < 0) {
+	// read the data from the MPU9250
+	if (readRegisters(ACCEL_OUT, 14, _buffer) < 0) {
 		return -1;
 	}
 	// combine into 16 bit values
@@ -357,9 +356,15 @@ int readSensor() {
 	_gxcounts = (((int16_t)_buffer[8]) << 8) | _buffer[9];
 	_gycounts = (((int16_t)_buffer[10]) << 8) | _buffer[11];
 	_gzcounts = (((int16_t)_buffer[12]) << 8) | _buffer[13];
+
+	// read the data from the AK8963
+	if (readAK8963Registers(AK8963_HXL, 7, &_buffer[14]) < 0) {
+			return -1;
+	}
 	_hxcounts = (((int16_t)_buffer[15]) << 8) | _buffer[14];
 	_hycounts = (((int16_t)_buffer[17]) << 8) | _buffer[16];
 	_hzcounts = (((int16_t)_buffer[19]) << 8) | _buffer[18];
+
 	// transform and convert to float values
 	accel_x = (((float)(tX[0]*_axcounts + tX[1]*_aycounts + tX[2]*_azcounts) * _accelScale) - _axb)*_axs;
 	accel_y = (((float)(tY[0]*_axcounts + tY[1]*_aycounts + tY[2]*_azcounts) * _accelScale) - _ayb)*_ays;
@@ -367,11 +372,14 @@ int readSensor() {
 	gyro_x = ((float)(tX[0]*_gxcounts + tX[1]*_gycounts + tX[2]*_gzcounts) * _gyroScale) - _gxb;
 	gyro_y = ((float)(tY[0]*_gxcounts + tY[1]*_gycounts + tY[2]*_gzcounts) * _gyroScale) - _gyb;
 	gyro_z = ((float)(tZ[0]*_gxcounts + tZ[1]*_gycounts + tZ[2]*_gzcounts) * _gyroScale) - _gzb;
+
 	magneto_x = (((float)(_hxcounts) * _magScaleX) - _hxb)*_hxs;
 	magneto_y = (((float)(_hycounts) * _magScaleY) - _hyb)*_hys;
 	magneto_z = (((float)(_hzcounts) * _magScaleZ) - _hzb)*_hzs;
+
 	tempera = ((((float) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
 	return 1;
+
 }
 
 
@@ -421,98 +429,98 @@ int calibrateGyro() {
 /* finds bias and scale factor calibration for the magnetometer,
 the sensor should be rotated in a figure 8 motion until complete */
 int calibrateMagneto(void) {
-  // set the srd
-  if (setSrd(19) < 0) {
-    return -1;
-  }
+	// set the srd
+	if (setSrd(19) < 0) {
+		return -1;
+	}
 
-  // get a starting set of data
-  readSensor();
-  _hxmax = getMagX_uT();
-  _hxmin = getMagX_uT();
-  _hymax = getMagY_uT();
-  _hymin = getMagY_uT();
-  _hzmax = getMagZ_uT();
-  _hzmin = getMagZ_uT();
+	// get a starting set of data
+	readSensor();
+	_hxmax = getMagX_uT();
+	_hxmin = getMagX_uT();
+	_hymax = getMagY_uT();
+	_hymin = getMagY_uT();
+	_hzmax = getMagZ_uT();
+	_hzmin = getMagZ_uT();
 
-  // collect data to find max / min in each channel
-  _counter = 0;
-  while (_counter < _maxCounts) {
-    _delta = 0.0f;
-    _framedelta = 0.0f;
-    readSensor();
-    _hxfilt = (_hxfilt*((float)_coeff-1)+(getMagX_uT()/_hxs+_hxb))/((float)_coeff);
-    _hyfilt = (_hyfilt*((float)_coeff-1)+(getMagY_uT()/_hys+_hyb))/((float)_coeff);
-    _hzfilt = (_hzfilt*((float)_coeff-1)+(getMagZ_uT()/_hzs+_hzb))/((float)_coeff);
-    if (_hxfilt > _hxmax) {
-      _delta = _hxfilt - _hxmax;
-      _hxmax = _hxfilt;
-    }
-    if (_delta > _framedelta) {
-      _framedelta = _delta;
-    }
-    if (_hyfilt > _hymax) {
-      _delta = _hyfilt - _hymax;
-      _hymax = _hyfilt;
-    }
-    if (_delta > _framedelta) {
-      _framedelta = _delta;
-    }
-    if (_hzfilt > _hzmax) {
-      _delta = _hzfilt - _hzmax;
-      _hzmax = _hzfilt;
-    }
-    if (_delta > _framedelta) {
-      _framedelta = _delta;
-    }
-    if (_hxfilt < _hxmin) {
-      _delta = abs(_hxfilt - _hxmin);
-      _hxmin = _hxfilt;
-    }
-    if (_delta > _framedelta) {
-      _framedelta = _delta;
-    }
-    if (_hyfilt < _hymin) {
-      _delta = abs(_hyfilt - _hymin);
-      _hymin = _hyfilt;
-    }
-    if (_delta > _framedelta) {
-      _framedelta = _delta;
-    }
-    if (_hzfilt < _hzmin) {
-      _delta = abs(_hzfilt - _hzmin);
-      _hzmin = _hzfilt;
-    }
-    if (_delta > _framedelta) {
-      _framedelta = _delta;
-    }
-    if (_framedelta > _deltaThresh) {
-      _counter = 0;
-    } else {
-      _counter++;
-    }
-    delay(20);
-  }
+	// collect data to find max / min in each channel
+	_counter = 0;
+	while (_counter < _maxCounts) {
+		_delta = 0.0f;
+		_framedelta = 0.0f;
+		readSensor();
+		_hxfilt = (_hxfilt*((float)_coeff-1)+(getMagX_uT()/_hxs+_hxb))/((float)_coeff);
+		_hyfilt = (_hyfilt*((float)_coeff-1)+(getMagY_uT()/_hys+_hyb))/((float)_coeff);
+		_hzfilt = (_hzfilt*((float)_coeff-1)+(getMagZ_uT()/_hzs+_hzb))/((float)_coeff);
+		if (_hxfilt > _hxmax) {
+			_delta = _hxfilt - _hxmax;
+			_hxmax = _hxfilt;
+		}
+		if (_delta > _framedelta) {
+			_framedelta = _delta;
+		}
+		if (_hyfilt > _hymax) {
+			_delta = _hyfilt - _hymax;
+			_hymax = _hyfilt;
+		}
+		if (_delta > _framedelta) {
+			_framedelta = _delta;
+		}
+		if (_hzfilt > _hzmax) {
+			_delta = _hzfilt - _hzmax;
+			_hzmax = _hzfilt;
+		}
+		if (_delta > _framedelta) {
+			_framedelta = _delta;
+		}
+		if (_hxfilt < _hxmin) {
+			_delta = abs(_hxfilt - _hxmin);
+			_hxmin = _hxfilt;
+		}
+		if (_delta > _framedelta) {
+			_framedelta = _delta;
+		}
+		if (_hyfilt < _hymin) {
+			_delta = abs(_hyfilt - _hymin);
+			_hymin = _hyfilt;
+		}
+		if (_delta > _framedelta) {
+			_framedelta = _delta;
+		}
+		if (_hzfilt < _hzmin) {
+			_delta = abs(_hzfilt - _hzmin);
+			_hzmin = _hzfilt;
+		}
+		if (_delta > _framedelta) {
+			_framedelta = _delta;
+		}
+		if (_framedelta > _deltaThresh) {
+			_counter = 0;
+		} else {
+			_counter++;
+		}
+		delay(20);
+	}
 
-  // find the magnetometer bias
-  _hxb = (_hxmax + _hxmin) / 2.0f;
-  _hyb = (_hymax + _hymin) / 2.0f;
-  _hzb = (_hzmax + _hzmin) / 2.0f;
+	// find the magnetometer bias
+	_hxb = (_hxmax + _hxmin) / 2.0f;
+	_hyb = (_hymax + _hymin) / 2.0f;
+	_hzb = (_hzmax + _hzmin) / 2.0f;
 
-  // find the magnetometer scale factor
-  _hxs = (_hxmax - _hxmin) / 2.0f;
-  _hys = (_hymax - _hymin) / 2.0f;
-  _hzs = (_hzmax - _hzmin) / 2.0f;
-  _avgs = (_hxs + _hys + _hzs) / 3.0f;
-  _hxs = _avgs/_hxs;
-  _hys = _avgs/_hys;
-  _hzs = _avgs/_hzs;
+	// find the magnetometer scale factor
+	_hxs = (_hxmax - _hxmin) / 2.0f;
+	_hys = (_hymax - _hymin) / 2.0f;
+	_hzs = (_hzmax - _hzmin) / 2.0f;
+	_avgs = (_hxs + _hys + _hzs) / 3.0f;
+	_hxs = _avgs/_hxs;
+	_hys = _avgs/_hys;
+	_hzs = _avgs/_hzs;
 
-  // set the srd back to what it was
-  if (setSrd(_srd) < 0) {
-    return -2;
-  }
-  return 1;
+	// set the srd back to what it was
+	if (setSrd(_srd) < 0) {
+		return -2;
+	}
+	return 1;
 }
 
 /* returns the gyro bias in the X direction, rad/s */
