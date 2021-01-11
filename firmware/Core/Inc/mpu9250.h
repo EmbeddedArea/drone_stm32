@@ -201,6 +201,8 @@ float getMagZ_uT();
 float getTemperature_C();
 
 int calibrateGyro();
+int calibrateMagneto(void) ;
+
 float getGyroBiasX_rads();
 float getGyroBiasY_rads();
 float getGyroBiasZ_rads();

@@ -278,9 +278,9 @@ int main(void)
 	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
 
 	while(1){
-		readSensor();
+		int res = readSensor();
 		memset(text, 0, 50);
-		sprintf((char *) text,"Y:%d P:%d R:%d \n", (int)(100.0*getAccelX_mss()), (int)(100.0*getGyroX_rads()), (int)(100.0*getMagX_uT()));
+		sprintf((char *) text,"%d -- Y:%d P:%d R:%d \n", res, (int)(100.0*getMagY_uT()),(_hxcounts), (int)(100.0*getMagX_uT()));
 		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
 		delay(100);
 	}
