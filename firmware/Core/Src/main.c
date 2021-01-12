@@ -23,15 +23,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "math.h"
-#include "string.h"
-#include "stdio.h"
-//#include "newMpu.h"
-#include "mpu9250.h"
-extern int16_t _axcounts,_aycounts,_azcounts;
-extern int16_t _gxcounts,_gycounts,_gzcounts;
-extern int16_t _hxcounts,_hycounts,_hzcounts;
-extern int16_t _tcounts;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -253,71 +244,8 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-	//HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
-
-	uint8_t text[50];
-
+	HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
 	HAL_UART_Transmit(&HUART_PC, (uint8_t *) "init", 4, 0xFF);
-
-	int ret = mpu_init();
-
-	memset(text, 0, 50);
-	sprintf((char *) text,"mpu_init:: %d\n", ret);
-	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-
-	int who = whoAmI();
-
-	memset(text, 0, 50);
-	sprintf((char *) text,"WhoAmI:: %d\n", who);
-	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-
-	who = whoAmIAK8963();
-
-	memset(text, 0, 50);
-	sprintf((char *) text,"whoAmIAK8963:: %d\n", who);
-	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-
-	const float alpha = 0.5;
-
-	double fXg = 0;
-	double fYg = 0;
-	double fZg = 0;
-
-	double pitch, roll, Xg, Yg, Zg;
-
-	while(1){
-		readSensor();
-
-		Xg = getAccelX_mss();
-		Yg = getAccelY_mss();
-		Zg = getAccelZ_mss();
-
-		//Low Pass Filter
-		fXg = Xg * alpha + (fXg * (1.0 - alpha));
-		fYg = Yg * alpha + (fYg * (1.0 - alpha));
-		fZg = Zg * alpha + (fZg * (1.0 - alpha));
-
-		//Roll & Pitch Equations
-		roll  = (atan2(-fYg, fZg)*180.0)/M_PI;
-		pitch = (atan2(fXg, sqrt(fYg*fYg + fZg*fZg))*180.0)/M_PI;
-
-		memset(text, 0, 50);
-		sprintf((char *) text,"Roll:%05d:Pitch:%05d:\n", (int)(100.0*roll), (int)(100.0*pitch));
-		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-		/*
-		memset(text, 0, 50);
-		sprintf((char *) text,"Ax:%05d Ay:%05d Az:%05d - ", _axcounts, _aycounts, _azcounts);
-		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-		memset(text, 0, 50);
-		sprintf((char *) text,"Gx:%05d Gy:%05d Gz:%05d - ", _gxcounts, _gycounts, _gzcounts);
-		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-		memset(text, 0, 50);
-		sprintf((char *) text,"Mx:%05d My:%05d Mz:%05d \n", _hxcounts, _hycounts, _hzcounts);
-		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-		 */
-		delay(100);
-	}
-
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */

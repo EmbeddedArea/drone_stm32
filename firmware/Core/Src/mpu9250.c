@@ -7,6 +7,7 @@
 
 #include "mpu9250.h"
 #include "stdlib.h"
+#include "cmsis_os.h"
 
 // track success of interacting with sensor
 int _status;
@@ -183,9 +184,8 @@ static int readAK8963Registers(uint8_t subAddress, uint8_t count, uint8_t* dest)
 		return -3;
 	}
 	delay(1);
-	// read the bytes off the MPU9250 EXT_SENS_DATA registers
-	_status = readRegisters(EXT_SENS_DATA_00, count, dest);
-	return _status;
+	// read the bytes off the MPU9250 EXT_SENS_DATA registers and return
+	return readRegisters(EXT_SENS_DATA_00, count, dest);
 }
 
 

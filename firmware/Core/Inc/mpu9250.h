@@ -18,6 +18,7 @@ extern "C" {
  *********************/
 #include "main.h"
 #include "stdint.h"
+#include "cmsis_os.h"
 
 extern I2C_HandleTypeDef hi2c1;
 
@@ -25,7 +26,7 @@ extern I2C_HandleTypeDef hi2c1;
 /**********************
  *      MACROS and DEFINES
  **********************/
-#define delay(x) (HAL_Delay(x))
+#define delay(x) (osDelay(x))
 
 #define MPU9250_I2C			hi2c1
 #define MPU_I2C_ADDRESS		0x68<<1
