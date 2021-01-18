@@ -12,7 +12,8 @@
 #include "string.h"
 #include "stdio.h"
 
-
+extern DMA_HandleTypeDef hdma_i2c1_rx;
+extern osSemaphoreId mpu9265_smphrHandle;
 extern osThreadId gpsTaskHandle, mpu9265TaskHandle, batteryTaskHandle;
 
 /**
@@ -37,34 +38,40 @@ void GPSTask(void const * argument)
  */
 void MPU9265Task(void const * argument)
 {
-	char text[30];
-	const float alpha = 0.5;
+	osSemaphoreWait(mpu9265_smphrHandle, osWaitForever);
+	__HAL_DMA_ENABLE_IT(&hdma_i2c1_rx, DMA_IT_TC);
+	const double alpha = 0.5;
 
 	double fXg = 0;
 	double fYg = 0;
 	double fZg = 0;
 
-	double pitch, roll, Xg, Yg, Zg;
+	double pitch, roll;
+	double Xg, Yg, Zg;
 
+#if SERIAL_DEBUG
+
+	char text[30];
 
 	int ret = mpu_init();
-
-	memset(text, 0, 50);
-	sprintf((char *) text,"mpu_init:: %d\n", ret);
+	memset(text, 0, 30);
+	sprintf((char *) text,"mpu_init: %d\n", ret);
 	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
 
 	int who = whoAmI();
 
-	memset(text, 0, 50);
-	sprintf((char *) text,"WhoAmI:: %d\n", who);
+	memset(text, 0, 30);
+	sprintf((char *) text,"WhoAmI: %d\n", who);
 	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
 
 	who = whoAmIAK8963();
 
-	memset(text, 0, 50);
-	sprintf((char *) text,"whoAmIAK8963:: %d\n", who);
+	memset(text, 0, 30);
+	sprintf((char *) text,"whoAmIAK8963: %d\n", who);
 	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-
+#else
+	mpu_init();
+#endif
 
 	for(;;)
 	{
@@ -80,13 +87,16 @@ void MPU9265Task(void const * argument)
 		fZg = Zg * alpha + (fZg * (1.0 - alpha));
 
 		//Roll & Pitch Equations
-		roll  = (atan2(-fYg, fZg)*180.0)/M_PI;
-		pitch = (atan2(fXg, sqrt(fYg*fYg + fZg*fZg))*180.0)/M_PI;
+		roll  = (double) (atan2(-fYg, fZg)*180.0)/M_PI;
+		pitch = (double) (atan2(fXg, sqrt(fYg*fYg + fZg*fZg))*180.0)/M_PI;
 
-		memset(text, 0, 50);
-		sprintf((char *) text,"Roll:%05d:Pitch:%05d:\n", (int)(100.0*roll), (int)(100.0*pitch));
+#if SERIAL_DEBUG
+		memset(text, 0, 30);
+		sprintf((char *) text,"Roll:%05d:Pitch:%05d:\n", (int)(100.0 * roll), (int)(100.0 * pitch));
 		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
 		osDelay(100);
+
 	}
 }
 

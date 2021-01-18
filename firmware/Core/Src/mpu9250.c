@@ -5,10 +5,21 @@
  *      Author: Azad
  */
 
+/*********************
+ *      INCLUDES
+ *********************/
 #include "mpu9250.h"
 #include "stdlib.h"
 #include "cmsis_os.h"
 
+/**********************
+ *  EXTERN VARIABLES
+ **********************/
+extern osSemaphoreId mpu9265_smphrHandle;
+
+/******************************
+ *  GLOBAL & STATIC VARIABLES
+ ******************************/
 // track success of interacting with sensor
 int _status;
 
@@ -125,7 +136,8 @@ static int writeRegister(uint8_t subAddress, uint8_t data){
  */
 static int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest){
 	HAL_I2C_Master_Transmit(&MPU9250_I2C, MPU_I2C_ADDRESS, &subAddress, 1, 0xFF);
-	HAL_I2C_Master_Receive(&MPU9250_I2C, MPU_I2C_ADDRESS, dest, count, 0xFF);
+	HAL_I2C_Master_Receive_DMA(&MPU9250_I2C, MPU_I2C_ADDRESS, dest, count);
+	osSemaphoreWait(mpu9265_smphrHandle, osWaitForever);
 	return 1;
 }
 
@@ -331,9 +343,9 @@ int mpu_init(){
 	// instruct the MPU9250 to get 7 bytes of data from the AK8963 at the sample rate
 	readAK8963Registers(AK8963_HXL, 7, _buffer);
 	// estimate gyro bias
-	if (calibrateGyro() < 0) {
+	/*if (calibrateGyro() < 0) {
 		return -20;
-	}
+	}*/
 	// successful init, return 1
 	return 1;
 }
