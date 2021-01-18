@@ -71,14 +71,6 @@ extern DMA_HandleTypeDef hdma_usart2_rx;
 #define GPS_TX_GPIO_Port GPIOB
 #define GPS_RX_Pin GPIO_PIN_11
 #define GPS_RX_GPIO_Port GPIOB
-#define SPI_CS_Pin GPIO_PIN_12
-#define SPI_CS_GPIO_Port GPIOB
-#define SPI_SCK_Pin GPIO_PIN_13
-#define SPI_SCK_GPIO_Port GPIOB
-#define SPI_MISO_Pin GPIO_PIN_14
-#define SPI_MISO_GPIO_Port GPIOB
-#define SPI_MOSI_Pin GPIO_PIN_15
-#define SPI_MOSI_GPIO_Port GPIOB
 #define DEBUG_LED_Pin GPIO_PIN_13
 #define DEBUG_LED_GPIO_Port GPIOA
 #define LORA_AUX_Pin GPIO_PIN_3
