@@ -33,7 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "circular_buffers.h"
-#define SERIAL_DEBUG 0
+#define SERIAL_DEBUG 1
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

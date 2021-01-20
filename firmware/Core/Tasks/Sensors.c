@@ -46,7 +46,7 @@ void MPU9265Task(void const * argument)
 	double fYg = 0;
 	double fZg = 0;
 
-	double pitch, roll;
+	float pitch = 0.0f, roll = 0.0f;
 	double Xg, Yg, Zg;
 
 #if SERIAL_DEBUG
@@ -72,30 +72,18 @@ void MPU9265Task(void const * argument)
 #else
 	mpu_init();
 #endif
-
+	uint32_t PreviousWakeTime = osKernelSysTick();;
 	for(;;)
 	{
 		readSensor();
-
-		Xg = getAccelX_mss();
-		Yg = getAccelY_mss();
-		Zg = getAccelZ_mss();
-
-		//Low Pass Filter
-		fXg = Xg * alpha + (fXg * (1.0 - alpha));
-		fYg = Yg * alpha + (fYg * (1.0 - alpha));
-		fZg = Zg * alpha + (fZg * (1.0 - alpha));
-
-		//Roll & Pitch Equations
-		roll  = (double) (atan2(-fYg, fZg)*180.0)/M_PI;
-		pitch = (double) (atan2(fXg, sqrt(fYg*fYg + fZg*fZg))*180.0)/M_PI;
-
+		ComplementaryFilter(&pitch, &roll);
 #if SERIAL_DEBUG
 		memset(text, 0, 30);
 		sprintf((char *) text,"Roll:%05d:Pitch:%05d:\n", (int)(100.0 * roll), (int)(100.0 * pitch));
 		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
 #endif
-		osDelay(100);
+
+	    osDelayUntil (&PreviousWakeTime, 100);
 
 	}
 }

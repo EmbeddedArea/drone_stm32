@@ -19,6 +19,7 @@ extern "C" {
 #include "main.h"
 #include "stdint.h"
 #include "cmsis_os.h"
+#include "math.h"
 
 extern I2C_HandleTypeDef hi2c1;
 
@@ -210,6 +211,7 @@ float getGyroBiasZ_rads();
 void setGyroBiasX_rads(float bias);
 void setGyroBiasY_rads(float bias);
 void setGyroBiasZ_rads(float bias);
+void ComplementaryFilter(float *pitch, float *roll);
 
 #ifdef __cplusplus
 }

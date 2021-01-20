@@ -343,9 +343,9 @@ int mpu_init(){
 	// instruct the MPU9250 to get 7 bytes of data from the AK8963 at the sample rate
 	readAK8963Registers(AK8963_HXL, 7, _buffer);
 	// estimate gyro bias
-	/*if (calibrateGyro() < 0) {
+	if (calibrateGyro() < 0) {
 		return -20;
-	}*/
+	}
 	// successful init, return 1
 	return 1;
 }
@@ -369,13 +369,6 @@ int readSensor() {
 	_gycounts = (((int16_t)_buffer[10]) << 8) | _buffer[11];
 	_gzcounts = (((int16_t)_buffer[12]) << 8) | _buffer[13];
 
-	// read the data from the AK8963
-	if (readAK8963Registers(AK8963_HXL, 7, &_buffer[14]) < 0) {
-			return -1;
-	}
-	_hxcounts = (((int16_t)_buffer[15]) << 8) | _buffer[14];
-	_hycounts = (((int16_t)_buffer[17]) << 8) | _buffer[16];
-	_hzcounts = (((int16_t)_buffer[19]) << 8) | _buffer[18];
 
 	// transform and convert to float values
 	accel_x = (((float)(tX[0]*_axcounts + tX[1]*_aycounts + tX[2]*_azcounts) * _accelScale) - _axb)*_axs;
@@ -384,11 +377,19 @@ int readSensor() {
 	gyro_x = ((float)(tX[0]*_gxcounts + tX[1]*_gycounts + tX[2]*_gzcounts) * _gyroScale) - _gxb;
 	gyro_y = ((float)(tY[0]*_gxcounts + tY[1]*_gycounts + tY[2]*_gzcounts) * _gyroScale) - _gyb;
 	gyro_z = ((float)(tZ[0]*_gxcounts + tZ[1]*_gycounts + tZ[2]*_gzcounts) * _gyroScale) - _gzb;
+#if 0
+	// read the data from the AK8963
+	if (readAK8963Registers(AK8963_HXL, 7, &_buffer[14]) < 0) {
+		return -1;
+	}
+	_hxcounts = (((int16_t)_buffer[15]) << 8) | _buffer[14];
+	_hycounts = (((int16_t)_buffer[17]) << 8) | _buffer[16];
+	_hzcounts = (((int16_t)_buffer[19]) << 8) | _buffer[18];
 
 	magneto_x = (((float)(_hxcounts) * _magScaleX) - _hxb)*_hxs;
 	magneto_y = (((float)(_hycounts) * _magScaleY) - _hyb)*_hys;
 	magneto_z = (((float)(_hzcounts) * _magScaleZ) - _hzb)*_hzs;
-
+#endif
 	tempera = ((((float) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
 	return 1;
 
@@ -773,3 +774,21 @@ int setSrd(uint8_t srd) {
 	return 1;
 }
 
+/**ComplementaryFilter
+ *
+ * @param pitch
+ * @param roll
+ */
+void ComplementaryFilter(float *pitch, float *roll){
+#define GYROSCOPE_SENSITIVITY 65.536f
+	float dt = 0.1f;
+
+	*pitch += ((float)_gxcounts / GYROSCOPE_SENSITIVITY) * dt;
+	*roll -= ((float)_gycounts / GYROSCOPE_SENSITIVITY) * dt;
+
+	float pitch_accuracy = atan2f((float)_aycounts, (float)_azcounts) * 180.0f / M_PI;
+	*pitch = *pitch * 0.98f + pitch_accuracy * 0.02f;
+
+	float roll_accuracy = atan2f((float)_axcounts, (float)_azcounts) * 180.0f / M_PI;
+	*roll = *roll * 0.98f + roll_accuracy * 0.02f;
+}
