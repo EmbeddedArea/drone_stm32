@@ -71,7 +71,7 @@ void send_message_to_pc(const char * buffer )
 #endif
 		}
 		else {	//Sending queue is successful
-#if SERIAL_DEBUG
+#if 0
 			uint8_t text[50];
 			memset(text, 0, 50);
 			sprintf((char *) text, "Queue to PC sent start_index:%d length:%d\n", (int) struct_for_queue.start_index, (int) struct_for_queue.length);

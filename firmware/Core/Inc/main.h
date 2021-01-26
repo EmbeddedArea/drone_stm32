@@ -33,7 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "circular_buffers.h"
-#define SERIAL_DEBUG 1
+#define SERIAL_DEBUG 0
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -57,7 +57,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void send_message_to_pc(const char * buffer );
 extern UART_HandleTypeDef huart2;
 extern DMA_HandleTypeDef hdma_usart2_rx;
 /* USER CODE END EFP */
@@ -110,7 +110,7 @@ typedef struct {
 /**
  * PC DMA Buffer length for receiver
  */
-#define PC_RX_DMA_BUFFER_LEN	(512)
+#define PC_RX_DMA_BUFFER_LEN	(100)
 
 /* USER CODE END Private defines */
 

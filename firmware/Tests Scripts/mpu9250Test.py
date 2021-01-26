@@ -38,10 +38,8 @@ def animate(i, xs, ys, zs):
 
         # Draw x and y lists
         ax.plot(xs, ys, color='blue', label='Pitch')
-        ax.set_ylim([-18000, 18000])
         
         ax2.plot(xs, zs, color='red', label='Roll')
-        ax2.set_ylim([-18000, 18000])
 
 
 

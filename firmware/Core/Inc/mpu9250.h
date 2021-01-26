@@ -2,7 +2,7 @@
  * mpu.h
  *
  *  Created on: 10 Oca 2021
- *      Author: Azad
+ *      Author: Azad Karataş
  */
 
 #ifndef INC_MPU_H_
@@ -32,69 +32,13 @@ extern I2C_HandleTypeDef hi2c1;
 #define MPU9250_I2C			hi2c1
 #define MPU_I2C_ADDRESS		0x68<<1
 
-
-/**********************
- *      TYPEDEFS
- **********************/
-
-/**
- * Gyroscope Features
- */
-typedef enum
-{
-	GYRO_RANGE_250DPS,
-	GYRO_RANGE_500DPS,
-	GYRO_RANGE_1000DPS,
-	GYRO_RANGE_2000DPS
-} mpu_gyroscope_range_t;
-
-/**
- * Accelerometer Features
- */
-typedef enum
-{
-	ACCEL_RANGE_2G,
-	ACCEL_RANGE_4G,
-	ACCEL_RANGE_8G,
-	ACCEL_RANGE_16G
-} mpu_accelerometer_range_t;
-
-/**
- * Bandwidth Values
- */
-typedef enum
-{
-	DLPF_BANDWIDTH_184HZ,
-	DLPF_BANDWIDTH_92HZ,
-	DLPF_BANDWIDTH_41HZ,
-	DLPF_BANDWIDTH_20HZ,
-	DLPF_BANDWIDTH_10HZ,
-	DLPF_BANDWIDTH_5HZ
-} mpu_dlpf_bandwidth_t;
-
-/**
- * Sample Rate Divider Values
- */
-typedef enum
-{
-	LP_ACCEL_ODR_0_24HZ = 0,
-	LP_ACCEL_ODR_0_49HZ = 1,
-	LP_ACCEL_ODR_0_98HZ = 2,
-	LP_ACCEL_ODR_1_95HZ = 3,
-	LP_ACCEL_ODR_3_91HZ = 4,
-	LP_ACCEL_ODR_7_81HZ = 5,
-	LP_ACCEL_ODR_15_63HZ = 6,
-	LP_ACCEL_ODR_31_25HZ = 7,
-	LP_ACCEL_ODR_62_50HZ = 8,
-	LP_ACCEL_ODR_125HZ = 9,
-	LP_ACCEL_ODR_250HZ = 10,
-	LP_ACCEL_ODR_500HZ = 11
-} mpu_sample_rate_divider_t;
-
+#define GRAVITY  			(9.807f)
+#define DEGREE_TO_RADIAN  	(3.14159265359f/180.0f)
+#define RADIANS_TO_DEGREES  (180.0f/3.14159265359f)
 
 
 /*********************
- *      DEFINES
+ *     REGISTERS
  *********************/
 // MPU9250 registers
 #define ACCEL_OUT   0x3B
@@ -178,19 +122,78 @@ typedef enum
 #define AK8963_WHO_AM_I   	0x00
 
 
+/**********************
+ *      TYPEDEFS
+ **********************/
+
+/**
+ * Gyroscope Features
+ */
+typedef enum
+{
+	GYRO_RANGE_250DPS,
+	GYRO_RANGE_500DPS,
+	GYRO_RANGE_1000DPS,
+	GYRO_RANGE_2000DPS
+} mpu_gyroscope_range_t;
+
+/**
+ * Accelerometer Features
+ */
+typedef enum
+{
+	ACCEL_RANGE_2G,
+	ACCEL_RANGE_4G,
+	ACCEL_RANGE_8G,
+	ACCEL_RANGE_16G
+} mpu_accelerometer_range_t;
+
+/**
+ * Bandwidth Values
+ */
+typedef enum
+{
+	DLPF_BANDWIDTH_184HZ ,
+	DLPF_BANDWIDTH_92HZ,
+	DLPF_BANDWIDTH_41HZ,
+	DLPF_BANDWIDTH_20HZ,
+	DLPF_BANDWIDTH_10HZ,
+	DLPF_BANDWIDTH_5HZ
+} mpu_dlpf_bandwidth_t;
+
+/**
+ * Sample Rate Divider Values
+ */
+typedef enum
+{
+	LP_ACCEL_ODR_0_24HZ = 0,
+	LP_ACCEL_ODR_0_49HZ = 1,
+	LP_ACCEL_ODR_0_98HZ = 2,
+	LP_ACCEL_ODR_1_95HZ = 3,
+	LP_ACCEL_ODR_3_91HZ = 4,
+	LP_ACCEL_ODR_7_81HZ = 5,
+	LP_ACCEL_ODR_15_63HZ = 6,
+	LP_ACCEL_ODR_31_25HZ = 7,
+	LP_ACCEL_ODR_62_50HZ = 8,
+	LP_ACCEL_ODR_125HZ = 9,
+	LP_ACCEL_ODR_250HZ = 10,
+	LP_ACCEL_ODR_500HZ = 11
+} mpu_sample_rate_divider_t;
+
+
 /*************************
  *  FUNCTION PROTOTYPES
  *************************/
-int whoAmI();
-int whoAmIAK8963();
+int MPU9250_WhoAmI();
+int MPU9250_WhoAmIAK8963();
 
-int mpu_init();
-int setAccelRange(mpu_accelerometer_range_t range);
-int setGyroRange(mpu_gyroscope_range_t range);
-int setDlpfBandwidth(mpu_dlpf_bandwidth_t bandwidth);
-int setSrd(uint8_t srd);
+int MPU9250_Init();
+int MPU9250_SetAccelRange(mpu_accelerometer_range_t range);
+int MPU9250_SetGyroRange(mpu_gyroscope_range_t range);
+int MPU9250_SetDlpfBandwidth(mpu_dlpf_bandwidth_t bandwidth);
+int MPU9250_SetSrd(uint8_t srd);
 
-int readSensor();
+int MPU9250_ReadSensor();
 float getAccelX_mss();
 float getAccelY_mss();
 float getAccelZ_mss();
@@ -204,6 +207,7 @@ float getTemperature_C();
 
 int calibrateGyro();
 int calibrateMagneto(void) ;
+void MPU9250_Calibrate();
 
 float getGyroBiasX_rads();
 float getGyroBiasY_rads();
@@ -211,7 +215,8 @@ float getGyroBiasZ_rads();
 void setGyroBiasX_rads(float bias);
 void setGyroBiasY_rads(float bias);
 void setGyroBiasZ_rads(float bias);
-void ComplementaryFilter(float *pitch, float *roll);
+
+void ComplementaryFilter(float *pitch, float *roll, uint32_t deltaT);
 
 #ifdef __cplusplus
 }

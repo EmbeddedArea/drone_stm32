@@ -40,50 +40,51 @@ void MPU9265Task(void const * argument)
 {
 	osSemaphoreWait(mpu9265_smphrHandle, osWaitForever);
 	__HAL_DMA_ENABLE_IT(&hdma_i2c1_rx, DMA_IT_TC);
-	const double alpha = 0.5;
-
-	double fXg = 0;
-	double fYg = 0;
-	double fZg = 0;
 
 	float pitch = 0.0f, roll = 0.0f;
-	double Xg, Yg, Zg;
 
 #if SERIAL_DEBUG
 
-	char text[30];
+	char text[65];
 
-	int ret = mpu_init();
-	memset(text, 0, 30);
+	int ret = MPU9250_Init();
+	memset(text, 0, 65);
 	sprintf((char *) text,"mpu_init: %d\n", ret);
-	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+	send_message_to_pc(text);
 
-	int who = whoAmI();
+	int who = MPU9250_WhoAmI();
 
-	memset(text, 0, 30);
+	memset(text, 0, 65);
 	sprintf((char *) text,"WhoAmI: %d\n", who);
-	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+	send_message_to_pc(text);
 
-	who = whoAmIAK8963();
+	who = MPU9250_WhoAmIAK8963();
 
-	memset(text, 0, 30);
+	memset(text, 0, 65);
 	sprintf((char *) text,"whoAmIAK8963: %d\n", who);
-	HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+	send_message_to_pc(text);
+
 #else
-	mpu_init();
+	MPU9250_Init();
 #endif
-	uint32_t PreviousWakeTime = osKernelSysTick();;
+
+	uint32_t time, deltaT;
+	uint32_t lastTime = 0;
+
 	for(;;)
 	{
-		readSensor();
-		ComplementaryFilter(&pitch, &roll);
+		MPU9250_ReadSensor();
+		time = HAL_GetTick();
+		deltaT = time - lastTime;
+		lastTime = time;
+		ComplementaryFilter(&pitch, &roll, deltaT);
 #if SERIAL_DEBUG
-		memset(text, 0, 30);
-		sprintf((char *) text,"Roll:%05d:Pitch:%05d:\n", (int)(100.0 * roll), (int)(100.0 * pitch));
-		HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+		memset(text, 0, 65);
+		sprintf((char *) text,"Roll:%05d:Pitch:%05d:\r\n", (int)(100.0*roll), (int)(100.0*pitch));
+		send_message_to_pc(text);
 #endif
 
-	    osDelayUntil (&PreviousWakeTime, 100);
+		osDelay(80);
 
 	}
 }

@@ -2,7 +2,7 @@
  * mpu9250.c
  *
  *  Created on: 10 Oca 2021
- *      Author: Azad
+ *      Author: Azad Karataş
  */
 
 /*********************
@@ -26,11 +26,18 @@ int _status;
 // buffer for reading from sensor
 uint8_t _buffer[21];
 
-// data counts
-int16_t _axcounts,_aycounts,_azcounts;
-int16_t _gxcounts,_gycounts,_gzcounts;
-int16_t _hxcounts,_hycounts,_hzcounts;
-int16_t _tcounts;
+// Raw 16 bit data for MPU sensor outputs
+int16_t raw_accel_x, raw_accel_y, raw_accel_z;
+int16_t raw_gyro_x, raw_gyro_y, raw_gyro_z;
+int16_t raw_magneto_x, raw_magneto_y, raw_magneto_z;
+int16_t raw_temperature;
+
+// Base calibration values
+float base_x_accel, base_y_accel, base_z_accel, base_x_gyro, base_y_gyro, base_z_gyro;
+
+float angularVelocityX, angularVelocityY;
+float aRoll, aPitch, oldRoll, oldPitch;
+float dt, alpha;
 
 // data buffer
 float accel_x, accel_y, accel_z;
@@ -80,16 +87,7 @@ float _hys = 1.0f;
 float _hzs = 1.0f;
 float _avgs;
 
-// transformation matrix
-/* transform the accel and gyro axes to match the magnetometer axes */
-const int16_t tX[3] = {0,  1,  0};
-const int16_t tY[3] = {1,  0,  0};
-const int16_t tZ[3] = {0,  0, -1};
-
 // constants
-const float G = 9.807f;
-const float _d2r = 3.14159265359f/180.0f;
-
 
 
 /*************************
@@ -127,8 +125,7 @@ static int writeRegister(uint8_t subAddress, uint8_t data){
 	}
 }
 
-/**
- *
+/**readRegisters
  * @param subAddress
  * @param count
  * @param dest
@@ -141,8 +138,7 @@ static int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest){
 	return 1;
 }
 
-/**
- *
+/**writeAK8963Register
  * @param subAddress
  * @param data
  * @return
@@ -175,8 +171,7 @@ static int writeAK8963Register(uint8_t subAddress, uint8_t data){
 	}
 }
 
-/**
- *
+/**readAK8963Registers
  * @param subAddress
  * @param count
  * @param dest
@@ -201,11 +196,11 @@ static int readAK8963Registers(uint8_t subAddress, uint8_t count, uint8_t* dest)
 }
 
 
-/**whoAmI
+/**MPU9250_WhoAmI
  *
  * @return
  */
-int whoAmI(){
+int MPU9250_WhoAmI(){
 	// read the WHO AM I register
 	if (readRegisters(WHO_AM_I,1,_buffer) < 0) {
 		return -1;
@@ -215,11 +210,11 @@ int whoAmI(){
 }
 
 
-/**whoAmIAK8963
+/**MPU9250_WhoAmIAK8963
  *
  * @return
  */
-int whoAmIAK8963(){
+int MPU9250_WhoAmIAK8963(){
 	// read the WHO AM I register
 	if (readAK8963Registers(AK8963_WHO_AM_I,1,_buffer) < 0) {
 		return -1;
@@ -229,11 +224,11 @@ int whoAmIAK8963(){
 }
 
 
-/**mpu_init
+/**MPU9250_Init
  *
  * @return
  */
-int mpu_init(){
+int MPU9250_Init(){
 	// select clock source to gyro
 	if(writeRegister(PWR_MGMNT_1, CLOCK_SEL_PLL) < 0){
 		return -1;
@@ -259,7 +254,7 @@ int mpu_init(){
 		return -4;
 	}
 	// check the WHO AM I byte, expected value is 0x71 (decimal 113) or 0x73 (decimal 115)
-	if((whoAmI() != 113)&&(whoAmI() != 115)){
+	if((MPU9250_WhoAmI() != 113)&&(MPU9250_WhoAmI() != 115)){
 		return -5;
 	}
 	// enable accelerometer and gyro
@@ -270,27 +265,15 @@ int mpu_init(){
 	if(writeRegister(ACCEL_CONFIG, ACCEL_FS_SEL_16G) < 0){
 		return -7;
 	}
-	_accelScale = G * 16.0f/32767.5f; // setting the accel scale to 16G
+	_accelScale = GRAVITY * 16.0f/32767.5f; // setting the accel scale to 16G
 	_accelRange = ACCEL_RANGE_16G;
-	// setting the gyro range to 2000DPS as default
-	if(writeRegister(GYRO_CONFIG, GYRO_FS_SEL_2000DPS) < 0){
-		return -8;
-	}
-	_gyroScale = 2000.0f/32767.5f * _d2r; // setting the gyro scale to 2000DPS
-	_gyroRange = GYRO_RANGE_2000DPS;
-	// setting bandwidth to 184Hz as default
-	if(writeRegister(ACCEL_CONFIG2, ACCEL_DLPF_184) < 0){
-		return -9;
-	}
-	if(writeRegister(CONFIG, GYRO_DLPF_184) < 0){ // setting gyro bandwidth to 184Hz
-		return -10;
-	}
-	_bandwidth = DLPF_BANDWIDTH_184HZ;
-	// setting the sample rate divider to 0 as default
-	if(writeRegister(SMPDIV, 0x00) < 0){
-		return -11;
-	}
-	_srd = 0;
+
+	MPU9250_SetGyroRange(GYRO_RANGE_250DPS);
+
+	MPU9250_SetDlpfBandwidth(DLPF_BANDWIDTH_184HZ);
+
+	MPU9250_SetSrd(19);
+
 	// enable I2C master mode
 	if(writeRegister(USER_CTRL, I2C_MST_EN) < 0){
 		return -12;
@@ -300,7 +283,7 @@ int mpu_init(){
 		return -13;
 	}
 	// check AK8963 WHO AM I register, expected value is 0x48 (decimal 72)
-	if( whoAmIAK8963() != 72 ){
+	if( MPU9250_WhoAmIAK8963() != 72 ){
 		return -14;
 	}
 	/* get the magnetometer calibration */
@@ -342,296 +325,104 @@ int mpu_init(){
 	}
 	// instruct the MPU9250 to get 7 bytes of data from the AK8963 at the sample rate
 	readAK8963Registers(AK8963_HXL, 7, _buffer);
-	// estimate gyro bias
-	if (calibrateGyro() < 0) {
+
+	MPU9250_Calibrate();
+	/*if (calibrateGyro() < 0) {
 		return -20;
-	}
+	}*/
 	// successful init, return 1
 	return 1;
 }
 
 
-/**readSensor
+/**MPU9250_ReadSensor
  * reads the most current data from MPU9250 and stores in buffer
  * @return
  */
-int readSensor() {
+int MPU9250_ReadSensor() {
 	// read the data from the MPU9250
 	if (readRegisters(ACCEL_OUT, 14, _buffer) < 0) {
 		return -1;
 	}
 	// combine into 16 bit values
-	_axcounts = (((int16_t)_buffer[0]) << 8) | _buffer[1];
-	_aycounts = (((int16_t)_buffer[2]) << 8) | _buffer[3];
-	_azcounts = (((int16_t)_buffer[4]) << 8) | _buffer[5];
-	_tcounts = (((int16_t)_buffer[6]) << 8) | _buffer[7];
-	_gxcounts = (((int16_t)_buffer[8]) << 8) | _buffer[9];
-	_gycounts = (((int16_t)_buffer[10]) << 8) | _buffer[11];
-	_gzcounts = (((int16_t)_buffer[12]) << 8) | _buffer[13];
+	raw_accel_x = (((int16_t)_buffer[0]) << 8) | _buffer[1];
+	raw_accel_y = (((int16_t)_buffer[2]) << 8) | _buffer[3];
+	raw_accel_z = (((int16_t)_buffer[4]) << 8) | _buffer[5];
+	raw_temperature = (((int16_t)_buffer[6]) << 8) | _buffer[7];
+	raw_gyro_x = (((int16_t)_buffer[8]) << 8) | _buffer[9];
+	raw_gyro_y = (((int16_t)_buffer[10]) << 8) | _buffer[11];
+	raw_gyro_z = (((int16_t)_buffer[12]) << 8) | _buffer[13];
 
-
-	// transform and convert to float values
-	accel_x = (((float)(tX[0]*_axcounts + tX[1]*_aycounts + tX[2]*_azcounts) * _accelScale) - _axb)*_axs;
-	accel_y = (((float)(tY[0]*_axcounts + tY[1]*_aycounts + tY[2]*_azcounts) * _accelScale) - _ayb)*_ays;
-	accel_z = (((float)(tZ[0]*_axcounts + tZ[1]*_aycounts + tZ[2]*_azcounts) * _accelScale) - _azb)*_azs;
-	gyro_x = ((float)(tX[0]*_gxcounts + tX[1]*_gycounts + tX[2]*_gzcounts) * _gyroScale) - _gxb;
-	gyro_y = ((float)(tY[0]*_gxcounts + tY[1]*_gycounts + tY[2]*_gzcounts) * _gyroScale) - _gyb;
-	gyro_z = ((float)(tZ[0]*_gxcounts + tZ[1]*_gycounts + tZ[2]*_gzcounts) * _gyroScale) - _gzb;
 #if 0
 	// read the data from the AK8963
 	if (readAK8963Registers(AK8963_HXL, 7, &_buffer[14]) < 0) {
 		return -1;
 	}
-	_hxcounts = (((int16_t)_buffer[15]) << 8) | _buffer[14];
-	_hycounts = (((int16_t)_buffer[17]) << 8) | _buffer[16];
-	_hzcounts = (((int16_t)_buffer[19]) << 8) | _buffer[18];
+	raw_magneto_x = (((int16_t)_buffer[15]) << 8) | _buffer[14];
+	raw_magneto_y = (((int16_t)_buffer[17]) << 8) | _buffer[16];
+	raw_magneto_z = (((int16_t)_buffer[19]) << 8) | _buffer[18];
 
-	magneto_x = (((float)(_hxcounts) * _magScaleX) - _hxb)*_hxs;
-	magneto_y = (((float)(_hycounts) * _magScaleY) - _hyb)*_hys;
-	magneto_z = (((float)(_hzcounts) * _magScaleZ) - _hzb)*_hzs;
+	magneto_x = (((float)(raw_magneto_x) * _magScaleX) - _hxb)*_hxs;
+	magneto_y = (((float)(raw_magneto_y) * _magScaleY) - _hyb)*_hys;
+	magneto_z = (((float)(raw_magneto_z) * _magScaleZ) - _hzb)*_hzs;
 #endif
-	tempera = ((((float) _tcounts) - _tempOffset)/_tempScale) + _tempOffset;
+	tempera = ((((float) raw_temperature) - _tempOffset)/_tempScale) + _tempOffset;
 	return 1;
 
 }
 
-
-/**calibrateGyro
- * estimates the gyro biases
- * @return
+/**MPU9250_Calibrate
+ *
  */
-int calibrateGyro() {
-	// set the range, bandwidth, and srd
-	if (setGyroRange(GYRO_RANGE_250DPS) < 0) {
-		return -1;
-	}
-	if (setDlpfBandwidth(DLPF_BANDWIDTH_20HZ) < 0) {
-		return -2;
-	}
-	if (setSrd(19) < 0) {
-		return -3;
-	}
+void MPU9250_Calibrate(){
+	int calibration_sample_count = 100;
+	float x_accel = 0;
+	float y_accel = 0;
+	float z_accel = 0;
+	float x_gyro = 0;
+	float y_gyro = 0;
+	float z_gyro = 0;
 
-	// take samples and find bias
-	_gxbD = 0;
-	_gybD = 0;
-	_gzbD = 0;
-	for (size_t i=0; i < _numSamples; i++) {
-		readSensor();
-		_gxbD += (getGyroX_rads() + _gxb)/((double)_numSamples);
-		_gybD += (getGyroY_rads() + _gyb)/((double)_numSamples);
-		_gzbD += (getGyroZ_rads() + _gzb)/((double)_numSamples);
-		delay(20);
-	}
-	_gxb = (float)_gxbD;
-	_gyb = (float)_gybD;
-	_gzb = (float)_gzbD;
-
-	// set the range, bandwidth, and srd back to what they were
-	if (setGyroRange(_gyroRange) < 0) {
-		return -4;
-	}
-	if (setDlpfBandwidth(_bandwidth) < 0) {
-		return -5;
-	}
-	if (setSrd(_srd) < 0) {
-		return -6;
-	}
-	return 1;
-}
-/* finds bias and scale factor calibration for the magnetometer,
-the sensor should be rotated in a figure 8 motion until complete */
-int calibrateMagneto(void) {
-	// set the srd
-	if (setSrd(19) < 0) {
-		return -1;
-	}
-
-	// get a starting set of data
-	readSensor();
-	_hxmax = getMagX_uT();
-	_hxmin = getMagX_uT();
-	_hymax = getMagY_uT();
-	_hymin = getMagY_uT();
-	_hzmax = getMagZ_uT();
-	_hzmin = getMagZ_uT();
-
-	// collect data to find max / min in each channel
-	_counter = 0;
-	while (_counter < _maxCounts) {
-		_delta = 0.0f;
-		_framedelta = 0.0f;
-		readSensor();
-		_hxfilt = (_hxfilt*((float)_coeff-1)+(getMagX_uT()/_hxs+_hxb))/((float)_coeff);
-		_hyfilt = (_hyfilt*((float)_coeff-1)+(getMagY_uT()/_hys+_hyb))/((float)_coeff);
-		_hzfilt = (_hzfilt*((float)_coeff-1)+(getMagZ_uT()/_hzs+_hzb))/((float)_coeff);
-		if (_hxfilt > _hxmax) {
-			_delta = _hxfilt - _hxmax;
-			_hxmax = _hxfilt;
-		}
-		if (_delta > _framedelta) {
-			_framedelta = _delta;
-		}
-		if (_hyfilt > _hymax) {
-			_delta = _hyfilt - _hymax;
-			_hymax = _hyfilt;
-		}
-		if (_delta > _framedelta) {
-			_framedelta = _delta;
-		}
-		if (_hzfilt > _hzmax) {
-			_delta = _hzfilt - _hzmax;
-			_hzmax = _hzfilt;
-		}
-		if (_delta > _framedelta) {
-			_framedelta = _delta;
-		}
-		if (_hxfilt < _hxmin) {
-			_delta = abs(_hxfilt - _hxmin);
-			_hxmin = _hxfilt;
-		}
-		if (_delta > _framedelta) {
-			_framedelta = _delta;
-		}
-		if (_hyfilt < _hymin) {
-			_delta = abs(_hyfilt - _hymin);
-			_hymin = _hyfilt;
-		}
-		if (_delta > _framedelta) {
-			_framedelta = _delta;
-		}
-		if (_hzfilt < _hzmin) {
-			_delta = abs(_hzfilt - _hzmin);
-			_hzmin = _hzfilt;
-		}
-		if (_delta > _framedelta) {
-			_framedelta = _delta;
-		}
-		if (_framedelta > _deltaThresh) {
-			_counter = 0;
-		} else {
-			_counter++;
-		}
+	for (int i=0; i < calibration_sample_count; i++) {
+		MPU9250_ReadSensor();
+		x_accel += raw_accel_x;
+		y_accel += raw_accel_y;
+		z_accel += raw_accel_z;
+		x_gyro += raw_gyro_x;
+		y_gyro += raw_gyro_y;
+		z_gyro += raw_gyro_z;
 		delay(20);
 	}
 
-	// find the magnetometer bias
-	_hxb = (_hxmax + _hxmin) / 2.0f;
-	_hyb = (_hymax + _hymin) / 2.0f;
-	_hzb = (_hzmax + _hzmin) / 2.0f;
+	x_accel /= calibration_sample_count;
+	y_accel /= calibration_sample_count;
+	z_accel /= calibration_sample_count;
+	x_gyro /= calibration_sample_count;
+	y_gyro /= calibration_sample_count;
+	z_gyro /= calibration_sample_count;
 
-	// find the magnetometer scale factor
-	_hxs = (_hxmax - _hxmin) / 2.0f;
-	_hys = (_hymax - _hymin) / 2.0f;
-	_hzs = (_hzmax - _hzmin) / 2.0f;
-	_avgs = (_hxs + _hys + _hzs) / 3.0f;
-	_hxs = _avgs/_hxs;
-	_hys = _avgs/_hys;
-	_hzs = _avgs/_hzs;
-
-	// set the srd back to what it was
-	if (setSrd(_srd) < 0) {
-		return -2;
-	}
-	return 1;
+	// Store the raw calibration values globally
+	base_x_accel = x_accel;
+	base_y_accel = y_accel;
+	base_z_accel = z_accel;
+	base_x_gyro = x_gyro;
+	base_y_gyro = y_gyro;
+	base_z_gyro = z_gyro;
 }
 
-/* returns the gyro bias in the X direction, rad/s */
-float getGyroBiasX_rads() {
-	return _gxb;
-}
-
-/* returns the gyro bias in the Y direction, rad/s */
-float getGyroBiasY_rads() {
-	return _gyb;
-}
-
-/* returns the gyro bias in the Z direction, rad/s */
-float getGyroBiasZ_rads() {
-	return _gzb;
-}
-
-/* sets the gyro bias in the X direction to bias, rad/s */
-void setGyroBiasX_rads(float bias) {
-	_gxb = bias;
-}
-
-/* sets the gyro bias in the Y direction to bias, rad/s */
-void setGyroBiasY_rads(float bias) {
-	_gyb = bias;
-}
-
-/* sets the gyro bias in the Z direction to bias, rad/s */
-void setGyroBiasZ_rads(float bias) {
-	_gzb = bias;
-}
-
-
-
-
-/* returns the accelerometer measurement in the x direction, m/s/s */
-float getAccelX_mss() {
-	return accel_x;
-}
-
-/* returns the accelerometer measurement in the y direction, m/s/s */
-float getAccelY_mss() {
-	return accel_y;
-}
-
-/* returns the accelerometer measurement in the z direction, m/s/s */
-float getAccelZ_mss() {
-	return accel_z;
-}
-
-/* returns the gyroscope measurement in the x direction, rad/s */
-float getGyroX_rads() {
-	return gyro_x;
-}
-
-/* returns the gyroscope measurement in the y direction, rad/s */
-float getGyroY_rads() {
-	return gyro_y;
-}
-
-/* returns the gyroscope measurement in the z direction, rad/s */
-float getGyroZ_rads() {
-	return gyro_z;
-}
-
-/* returns the magnetometer measurement in the x direction, uT */
-float getMagX_uT() {
-	return magneto_x;
-}
-
-/* returns the magnetometer measurement in the y direction, uT */
-float getMagY_uT() {
-	return magneto_y;
-}
-
-/* returns the magnetometer measurement in the z direction, uT */
-float getMagZ_uT() {
-	return magneto_z;
-}
-
-/* returns the die temperature, C */
-float getTemperature_C() {
-	return tempera;
-}
-
-/**setGyroRange
+/**MPU9250_SetGyroRange
  * sets the gyro full scale range to values other than default
  * @param range
  * @return
  */
-int setGyroRange(mpu_gyroscope_range_t range) {
+int MPU9250_SetGyroRange(mpu_gyroscope_range_t range) {
 	switch(range) {
 	case GYRO_RANGE_250DPS: {
 		// setting the gyro range to 250DPS
 		if(writeRegister(GYRO_CONFIG,GYRO_FS_SEL_250DPS) < 0){
 			return -1;
 		}
-		_gyroScale = 250.0f/32767.5f * _d2r; // setting the gyro scale to 250DPS
+		_gyroScale = 250.0f/32767.5f * DEGREE_TO_RADIAN; // setting the gyro scale to 250DPS
 		break;
 	}
 	case GYRO_RANGE_500DPS: {
@@ -639,7 +430,7 @@ int setGyroRange(mpu_gyroscope_range_t range) {
 		if(writeRegister(GYRO_CONFIG,GYRO_FS_SEL_500DPS) < 0){
 			return -1;
 		}
-		_gyroScale = 500.0f/32767.5f * _d2r; // setting the gyro scale to 500DPS
+		_gyroScale = 500.0f/32767.5f * DEGREE_TO_RADIAN; // setting the gyro scale to 500DPS
 		break;
 	}
 	case GYRO_RANGE_1000DPS: {
@@ -647,7 +438,7 @@ int setGyroRange(mpu_gyroscope_range_t range) {
 		if(writeRegister(GYRO_CONFIG,GYRO_FS_SEL_1000DPS) < 0){
 			return -1;
 		}
-		_gyroScale = 1000.0f/32767.5f * _d2r; // setting the gyro scale to 1000DPS
+		_gyroScale = 1000.0f/32767.5f * DEGREE_TO_RADIAN; // setting the gyro scale to 1000DPS
 		break;
 	}
 	case GYRO_RANGE_2000DPS: {
@@ -655,7 +446,7 @@ int setGyroRange(mpu_gyroscope_range_t range) {
 		if(writeRegister(GYRO_CONFIG,GYRO_FS_SEL_2000DPS) < 0){
 			return -1;
 		}
-		_gyroScale = 2000.0f/32767.5f * _d2r; // setting the gyro scale to 2000DPS
+		_gyroScale = 2000.0f/32767.5f * DEGREE_TO_RADIAN; // setting the gyro scale to 2000DPS
 		break;
 	}
 	}
@@ -663,12 +454,12 @@ int setGyroRange(mpu_gyroscope_range_t range) {
 	return 1;
 }
 
-/**setDlpfBandwidth
+/**MPU9250_SetDlpfBandwidth
  * sets the DLPF bandwidth to values other than default
  * @param bandwidth
  * @return
  */
-int setDlpfBandwidth(mpu_dlpf_bandwidth_t bandwidth) {
+int MPU9250_SetDlpfBandwidth(mpu_dlpf_bandwidth_t bandwidth) {
 	switch(bandwidth) {
 	case DLPF_BANDWIDTH_184HZ: {
 		if(writeRegister(ACCEL_CONFIG2,ACCEL_DLPF_184) < 0){ // setting accel bandwidth to 184Hz
@@ -729,12 +520,12 @@ int setDlpfBandwidth(mpu_dlpf_bandwidth_t bandwidth) {
 	return 1;
 }
 
-/**setSrd
+/**MPU9250_SetSrd
  * sets the sample rate divider to values other than default
  * @param srd
  * @return
  */
-int setSrd(uint8_t srd) {
+int MPU9250_SetSrd(uint8_t srd) {
 	/* setting the sample rate divider to 19 to facilitate setting up magnetometer */
 	if(writeRegister(SMPDIV,19) < 0){ // setting the sample rate divider
 		return -1;
@@ -774,21 +565,25 @@ int setSrd(uint8_t srd) {
 	return 1;
 }
 
+
 /**ComplementaryFilter
  *
  * @param pitch
  * @param roll
  */
-void ComplementaryFilter(float *pitch, float *roll){
-#define GYROSCOPE_SENSITIVITY 65.536f
-	float dt = 0.1f;
+void ComplementaryFilter(float *pitch, float *roll, uint32_t deltaT){
 
-	*pitch += ((float)_gxcounts / GYROSCOPE_SENSITIVITY) * dt;
-	*roll -= ((float)_gycounts / GYROSCOPE_SENSITIVITY) * dt;
+	angularVelocityX = (float)(raw_gyro_x - base_x_gyro) / 131.0f;
+	angularVelocityY = (float)(raw_gyro_y - base_y_gyro) / 131.0f;
 
-	float pitch_accuracy = atan2f((float)_aycounts, (float)_azcounts) * 180.0f / M_PI;
-	*pitch = *pitch * 0.98f + pitch_accuracy * 0.02f;
+	aRoll = atan((float)raw_accel_y/sqrt(pow((float)raw_accel_x,2) + pow((float)raw_accel_z,2)));
+	aPitch = atan(-1*(float)raw_accel_x/sqrt(pow((float)raw_accel_y,2) + pow((float)raw_accel_z,2)));
 
-	float roll_accuracy = atan2f((float)_axcounts, (float)_azcounts) * 180.0f / M_PI;
-	*roll = *roll * 0.98f + roll_accuracy * 0.02f;
+	dt = (float)deltaT/1000.0f;
+	alpha = 0.95;
+	*roll = alpha * (angularVelocityX * dt + oldRoll) + (1 - alpha) * aRoll * RADIANS_TO_DEGREES;
+	*pitch = alpha * (angularVelocityY * dt + aPitch) + (1 - alpha) * aPitch * RADIANS_TO_DEGREES;
+
+	oldRoll = *roll;
+	oldPitch = *pitch;
 }
