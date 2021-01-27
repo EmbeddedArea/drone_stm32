@@ -8,7 +8,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "math.h"
-#include "mpu9250.h"
+#include "../MPU9250/mpu9250.h"
+#include "../NEO_6M_GPS/gps.h"
 #include "string.h"
 #include "stdio.h"
 

@@ -25,7 +25,6 @@ void LORARxManager(void const * argument)
 	}
 }
 
-
 /**
  * @brief Function implementing the loraTxManager thread.
  * @param argument: Not used

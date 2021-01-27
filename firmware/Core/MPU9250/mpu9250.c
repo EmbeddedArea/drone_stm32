@@ -8,7 +8,8 @@
 /*********************
  *      INCLUDES
  *********************/
-#include "mpu9250.h"
+#include "../MPU9250/mpu9250.h"
+
 #include "stdlib.h"
 #include "cmsis_os.h"
 
