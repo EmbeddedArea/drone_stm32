@@ -1,0 +1,17 @@
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\bin\Debug\MyJoyGui.exe.config
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\bin\Debug\MyJoyGui.exe
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\bin\Debug\MyJoyGui.pdb
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\bin\Debug\SharpDX.DirectInput.dll
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\bin\Debug\SharpDX.dll
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\bin\Debug\SharpDX.pdb
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\bin\Debug\SharpDX.DirectInput.pdb
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\bin\Debug\SharpDX.DirectInput.xml
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\GroundStation.csprojAssemblyReference.cache
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\GroundStation.Form1.resources
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\MyJoyGui.Properties.Resources.resources
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\GroundStation.csproj.GenerateResource.cache
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\MyJoyGui.exe.licenses
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\GroundStation.csproj.CoreCompileInputs.cache
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\GroundStation.csproj.CopyComplete
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\MyJoyGui.exe
+C:\Users\sona\source\repos\form\Drone_Ground_Station\MyJoyGui\obj\Debug\MyJoyGui.pdb
