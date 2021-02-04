@@ -58,8 +58,8 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 void send_message_to_pc(const char * buffer );
-extern UART_HandleTypeDef huart2;
-extern DMA_HandleTypeDef hdma_usart2_rx;
+extern UART_HandleTypeDef huart1, huart2;
+extern DMA_HandleTypeDef hdma_usart1_rx, hdma_usart2_rx;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -89,7 +89,6 @@ extern DMA_HandleTypeDef hdma_usart2_rx;
  * Struct type that is sent to the queue
  */
 typedef struct {
-	//circular_buffers_t *circular_buffer_addr;	/** address of the related circular buffer */
 	uint32_t start_index;						/** starting index of the circular buffer */
 	uint32_t length;							/** message length */
 } uart_data_t;
@@ -119,6 +118,12 @@ typedef struct {
  * Lora DMA Buffer length for receiver
  */
 #define LORA_RX_DMA_BUFFER_LEN	(100)
+
+/**
+ * LORA HandleTypeDefs
+ */
+#define HUART_LORA				(huart1)
+#define HDMA_UART_LORA			(hdma_usart1_rx)
 
 /* USER CODE END Private defines */
 
