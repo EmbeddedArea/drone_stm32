@@ -97,20 +97,28 @@ typedef struct {
 /**
  * Size of circular buffer
  */
-#define PC_CIRCULAR_UART_BUFFER_SIZE (100)
+#define PC_CIRCULAR_UART_BUFFER_SIZE 	(100)
+#define LORA_CIRCULAR_BUFFER_SIZE 		(100)
 
 /**
  * PC UART_HandleTypeDef
  */
 #define HUART_PC				(huart2)
+
 /**
  * PC DMA_HandleTypeDef
  */
 #define HDMA_UART_PC			(hdma_usart2_rx)
+
 /**
  * PC DMA Buffer length for receiver
  */
 #define PC_RX_DMA_BUFFER_LEN	(100)
+
+/**
+ * Lora DMA Buffer length for receiver
+ */
+#define LORA_RX_DMA_BUFFER_LEN	(100)
 
 /* USER CODE END Private defines */
 
