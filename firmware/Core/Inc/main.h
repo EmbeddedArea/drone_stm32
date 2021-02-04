@@ -117,7 +117,7 @@ typedef struct {
 /**
  * Lora DMA Buffer length for receiver
  */
-#define LORA_RX_DMA_BUFFER_LEN	(100)
+#define LORA_RX_DMA_BUFFER_LEN	(106)
 
 /**
  * LORA HandleTypeDefs
