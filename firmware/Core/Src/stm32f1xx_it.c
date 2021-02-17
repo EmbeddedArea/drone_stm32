@@ -67,7 +67,8 @@ extern UART_HandleTypeDef huart2;
 extern TIM_HandleTypeDef htim4;
 
 /* USER CODE BEGIN EV */
-extern osSemaphoreId pc_rx_smphrHandle, mpu9265_smphrHandle;
+extern osSemaphoreId pc_rx_smphrHandle, mpu9265_smphrHandle, lora_rx_smphrHandle;
+
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -185,7 +186,10 @@ void I2C1_EV_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-
+	if (__HAL_UART_GET_IT_SOURCE(&HUART_LORA, UART_IT_IDLE) && __HAL_UART_GET_FLAG(&HUART_LORA, UART_FLAG_IDLE)){
+		__HAL_UART_CLEAR_IDLEFLAG(&HUART_LORA);
+		osSemaphoreRelease(lora_rx_smphrHandle);	/** Goes into PCRxManager task*/
+	}
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */

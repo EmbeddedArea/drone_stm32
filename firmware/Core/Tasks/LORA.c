@@ -45,24 +45,43 @@ circular_buffers_t circular_buf_to_lora = {
 };
 
 
+/**
+ * @brief Function implementing the loraRxManager thread.
+ * @param argument: Not used
+ * @retval None
+ */
 void LORARxManager(void const * argument)
 {
-  /* USER CODE BEGIN LORARxManager */
-  /* Infinite loop */
-  for(;;)
-  {
-	  send_message_with_lora("lora\n");
-    osDelay(1000);
-  }
-  /* USER CODE END LORARxManager */
+	osSemaphoreWait(lora_rx_smphrHandle, osWaitForever);	/* Starts with obtaining the free semaphore at initial */
+	uint32_t rx_buffer_old_index = 0;
+	uint32_t rx_buffer_new_index = 0;
+	uart_data_t struct_for_queue;
+#if SERIAL_DEBUG
+	char text[60];
+#endif
+
+	__HAL_UART_ENABLE_IT(&HUART_LORA, UART_IT_IDLE);
+	HAL_UART_Receive_DMA(&HUART_LORA, lora_rx_dma_buffer, LORA_RX_DMA_BUFFER_LEN);
+
+	/* Infinite loop */
+	for(;;)
+	{
+		osSemaphoreWait(lora_rx_smphrHandle, osWaitForever);
+		send_message_with_lora("lora received\n");
+	}
 }
 
+/**
+ * @brief Function implementing the loraTxManager thread.
+ * @param argument: Not used
+ * @retval None
+ */
 void LORATxManager(void const * argument)
 {
 	uart_data_t task_received;
 	uint8_t received_command[50];
 
-	/*---------------DATA FRAME FORMAT ---------------
+	/*----------------- DATA FRAME FORMAT ------------
 	 * -----------------------------------------------
 	 * | 2 BYTE PREAMBLE | 50 BYTE DATA | 1 BYTE CRC |
 	 * -----------------------------------------------
@@ -93,15 +112,20 @@ void LORATxManager(void const * argument)
 	}
 }
 
+/**
+ * @brief Parses and processes the incoming data from Lora
+ * @param argument: Not used
+ * @retval None
+ */
 void LORACommunicationManager(void const * argument)
 {
-  /* USER CODE BEGIN LORACommunicationManager */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END LORACommunicationManager */
+	/* USER CODE BEGIN LORACommunicationManager */
+	/* Infinite loop */
+	for(;;)
+	{
+		osDelay(1);
+	}
+	/* USER CODE END LORACommunicationManager */
 }
 
 
