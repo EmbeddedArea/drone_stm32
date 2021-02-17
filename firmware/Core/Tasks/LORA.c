@@ -68,6 +68,75 @@ void LORARxManager(void const * argument)
 	{
 		osSemaphoreWait(lora_rx_smphrHandle, osWaitForever);
 		send_message_with_lora("lora received\n");
+		rx_buffer_new_index = LORA_RX_DMA_BUFFER_LEN - __HAL_DMA_GET_COUNTER(&HDMA_UART_LORA);
+		if(rx_buffer_new_index != rx_buffer_old_index) {		/* Simple check in receiving data */
+			if (rx_buffer_new_index > rx_buffer_old_index) { 	/* Normal FIFO mode */
+				//Fill inside the received_frame struct
+				struct_for_queue.start_index = circular_buf_from_lora.head;
+				struct_for_queue.length = rx_buffer_new_index - rx_buffer_old_index;
+				if(circular_write(&circular_buf_from_lora, (lora_rx_dma_buffer + rx_buffer_old_index), rx_buffer_new_index - rx_buffer_old_index) == CIRC_WRITE_SUCCESS){
+					if(xQueueSend(lora_rx_qHandle, (void *) &struct_for_queue, (TickType_t) 10) != pdPASS){	//Try sending to queue
+						// If sending queue is failed, then remove the written buffer from circular buffer
+						circular_buf_from_lora.remaining_length += struct_for_queue.length;
+						circular_buf_from_lora.head = struct_for_queue.start_index;
+#if SERIAL_DEBUG
+						// Failed to post the message, even after 10 ticks.
+						memset(text, 0, 100);
+						sprintf((char *) text, "Too busy... Failed to send to pc_rx_qHandle\n");
+						HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+					}
+					else {	//Sending queue is successful
+#if SERIAL_DEBUG
+						memset(text, 0, 100);
+						sprintf((char *) text, "Queue sent start_index:%d length:%d\n", (int) struct_for_queue.start_index, (int) struct_for_queue.length);
+						HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+					}
+				}
+				else {	// Not enough length in circular buffer for new commands
+#if SERIAL_DEBUG
+					memset(text, 0, 100);
+					sprintf((char *) text, "Not enough length in circular buffer for new commands\n");
+					HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+				}
+			}
+			else {	/* Overflow FIFO mode */
+				if(circular_buf_from_lora.remaining_length >= (LORA_RX_DMA_BUFFER_LEN - rx_buffer_old_index + rx_buffer_new_index)) {	/* Check if the circular buffer is empty enough */
+					//Fill inside the received_frame struct
+					struct_for_queue.start_index = circular_buf_from_lora.head;
+					struct_for_queue.length = LORA_RX_DMA_BUFFER_LEN - rx_buffer_old_index + rx_buffer_new_index;
+					/* First process the data end of the buffer */
+					circular_write(&circular_buf_from_lora, (lora_rx_dma_buffer + rx_buffer_old_index), LORA_RX_DMA_BUFFER_LEN - rx_buffer_old_index);
+					if (rx_buffer_new_index > 0) {/* If remains, process the data beginning of the buffer */
+						circular_write(&circular_buf_from_lora, lora_rx_dma_buffer, rx_buffer_new_index);
+					}
+
+					if(xQueueSend(lora_rx_qHandle, (void *) &struct_for_queue, (TickType_t) 10) != pdPASS){	//Try sending to queue
+#if SERIAL_DEBUG
+						// Failed to post the message, even after 10 ticks.
+						memset(text, 0, 100);
+						sprintf((char *) text, "Too busy... Failed to send to lora_rx_qHandle\n");
+						HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+					}
+				}
+				else {// Not enough length in circular buffer for new commands
+#if SERIAL_DEBUG
+					memset(text, 0, 100);
+					sprintf((char *) text, "Not enough length in circular buffer for new commands\n");
+					HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+				}
+			}
+		}
+
+		rx_buffer_old_index = rx_buffer_new_index;
+		// If DMA counter is at the end of the buffer, set it to 0
+		if (rx_buffer_old_index == LORA_RX_DMA_BUFFER_LEN) {
+			rx_buffer_old_index = 0;
+		}
 	}
 }
 
@@ -119,13 +188,39 @@ void LORATxManager(void const * argument)
  */
 void LORACommunicationManager(void const * argument)
 {
-	/* USER CODE BEGIN LORACommunicationManager */
-	/* Infinite loop */
+	uint8_t received_command[30];
+	uart_data_t msg_received;
+
 	for(;;)
 	{
-		osDelay(1);
+		xQueueReceive(lora_rx_qHandle, (void *) &msg_received, osWaitForever);
+		if(circular_read_from(&circular_buf_from_lora, received_command, msg_received.start_index, msg_received.length) == CIRC_READ_SUCCESS) {
+			//Incoming commands are being examined
+			switch(received_command[0]){
+			case 'a': {
+
+				send_message_to_pc("a case");
+				break;
+			}
+			case 'b': {
+
+				send_message_to_pc("b case");
+				break;
+			}
+			default:{	// Unknown command
+				send_message_to_pc("default case");
+				break;
+			}
+			}
+
+		}
+		else {
+#if SERIAL_DEBUG
+			//todo: Some log function is needed!
+			HAL_UART_Transmit(&HUART_PC, (uint8_t *) "circular_buf_from_lora READ_FAILED\n", 17, 0xFF);
+#endif
+		}
 	}
-	/* USER CODE END LORACommunicationManager */
 }
 
 

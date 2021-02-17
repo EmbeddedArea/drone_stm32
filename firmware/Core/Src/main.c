@@ -199,19 +199,19 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of periodicTask */
-  osThreadDef(periodicTask, PeriodicTask, osPriorityLow, 0, 128);
+  osThreadDef(periodicTask, PeriodicTask, osPriorityLow, 0, 64);
   periodicTaskHandle = osThreadCreate(osThread(periodicTask), NULL);
 
   /* definition and creation of gpsTask */
-  osThreadDef(gpsTask, GPSTask, osPriorityBelowNormal, 0, 128);
+  osThreadDef(gpsTask, GPSTask, osPriorityBelowNormal, 0, 64);
   gpsTaskHandle = osThreadCreate(osThread(gpsTask), NULL);
 
   /* definition and creation of motorControlTas */
-  osThreadDef(motorControlTas, MotorControlTask, osPriorityAboveNormal, 0, 128);
+  osThreadDef(motorControlTas, MotorControlTask, osPriorityAboveNormal, 0, 64);
   motorControlTasHandle = osThreadCreate(osThread(motorControlTas), NULL);
 
   /* definition and creation of mpu9265Task */
-  osThreadDef(mpu9265Task, MPU9265Task, osPriorityNormal, 0, 256);
+  osThreadDef(mpu9265Task, MPU9265Task, osPriorityNormal, 0, 128);
   mpu9265TaskHandle = osThreadCreate(osThread(mpu9265Task), NULL);
 
   /* definition and creation of loraRxManager */
@@ -219,11 +219,11 @@ int main(void)
   loraRxManagerHandle = osThreadCreate(osThread(loraRxManager), NULL);
 
   /* definition and creation of loraTxManager */
-  osThreadDef(loraTxManager, LORATxManager, osPriorityAboveNormal, 0, 128);
+  osThreadDef(loraTxManager, LORATxManager, osPriorityAboveNormal, 0, 64);
   loraTxManagerHandle = osThreadCreate(osThread(loraTxManager), NULL);
 
   /* definition and creation of loraCommManager */
-  osThreadDef(loraCommManager, LORACommunicationManager, osPriorityHigh, 0, 128);
+  osThreadDef(loraCommManager, LORACommunicationManager, osPriorityHigh, 0, 64);
   loraCommManagerHandle = osThreadCreate(osThread(loraCommManager), NULL);
 
   /* definition and creation of pcRxManager */
@@ -231,15 +231,15 @@ int main(void)
   pcRxManagerHandle = osThreadCreate(osThread(pcRxManager), NULL);
 
   /* definition and creation of pcTxManager */
-  osThreadDef(pcTxManager, PCTxManager, osPriorityNormal, 0, 128);
+  osThreadDef(pcTxManager, PCTxManager, osPriorityNormal, 0, 64);
   pcTxManagerHandle = osThreadCreate(osThread(pcTxManager), NULL);
 
   /* definition and creation of pcCommManager */
-  osThreadDef(pcCommManager, PcCommunicationManager, osPriorityAboveNormal, 0, 128);
+  osThreadDef(pcCommManager, PcCommunicationManager, osPriorityAboveNormal, 0, 64);
   pcCommManagerHandle = osThreadCreate(osThread(pcCommManager), NULL);
 
   /* definition and creation of batteryTask */
-  osThreadDef(batteryTask, BatteryTask, osPriorityLow, 0, 128);
+  osThreadDef(batteryTask, BatteryTask, osPriorityLow, 0, 64);
   batteryTaskHandle = osThreadCreate(osThread(batteryTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -247,6 +247,7 @@ int main(void)
   //Setting LORA to normal mode
   HAL_GPIO_WritePin(LORA_M0_GPIO_Port, LORA_M0_Pin, 0);
   HAL_GPIO_WritePin(LORA_M1_GPIO_Port, LORA_M1_Pin, 0);
+  HAL_Delay(50);
 	HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
 	HAL_UART_Transmit(&HUART_PC, (uint8_t *) "init", 4, 0xFF);
   /* USER CODE END RTOS_THREADS */
