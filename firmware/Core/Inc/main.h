@@ -57,7 +57,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-void send_message_to_pc(const char * buffer );
+void send_message_to_pc(const char * buffer);
+void send_message_with_lora(const char * buffer);
 extern UART_HandleTypeDef huart1, huart2;
 extern DMA_HandleTypeDef hdma_usart1_rx, hdma_usart2_rx;
 /* USER CODE END EFP */

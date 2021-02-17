@@ -13,8 +13,6 @@
 #include "drone_infos.h"
 
 extern osThreadId loraRxManagerHandle, loraTxManagerHandle, loraCommManagerHandle;
-
-
 extern osMessageQId lora_tx_qHandle;	/** Queue for TX synchronization */
 extern osMessageQId lora_rx_qHandle;	/** Queue for RX synchronization */
 extern osSemaphoreId lora_rx_smphrHandle, lora_tx_smphrHandle;
@@ -27,7 +25,7 @@ uint8_t lora_outgoing_circular[LORA_CIRCULAR_BUFFER_SIZE]; 	/** \brief Static ar
 /**
  * circular_buf_lora_incoming
  */
-circular_buffers_t circular_buf_lora_incoming = {
+circular_buffers_t circular_buf_from_lora = {
 		.size = LORA_CIRCULAR_BUFFER_SIZE,
 		.head = 0,
 		.tail = 0,
@@ -38,7 +36,7 @@ circular_buffers_t circular_buf_lora_incoming = {
 /**
  * circular_buf_to_lora_outgoing
  */
-circular_buffers_t circular_buf_to_lora_outgoing = {
+circular_buffers_t circular_buf_to_lora = {
 		.size = LORA_CIRCULAR_BUFFER_SIZE,
 		.head = 0,
 		.tail = 0,
@@ -47,101 +45,18 @@ circular_buffers_t circular_buf_to_lora_outgoing = {
 };
 
 
-/**
- * @brief Function implementing the loraRxManager thread.
- * @param argument: Not used
- * @retval None
- */
 void LORARxManager(void const * argument)
 {
-	osSemaphoreWait(lora_rx_smphrHandle, osWaitForever);	/* Starts with obtaining the free semaphore at initial */
-	uint32_t rx_buffer_old_index = 0;
-	uint32_t rx_buffer_new_index = 0;
-	uart_data_t struct_for_queue;
-
-	__HAL_UART_ENABLE_IT(&HUART_LORA, UART_IT_IDLE);
-	HAL_UART_Receive_DMA(&HUART_LORA, lora_rx_dma_buffer, LORA_RX_DMA_BUFFER_LEN);
-
-	for(;;)
-	{
-		osSemaphoreWait(lora_rx_smphrHandle, osWaitForever);
-		rx_buffer_new_index = LORA_RX_DMA_BUFFER_LEN - __HAL_DMA_GET_COUNTER(&HDMA_UART_LORA);
-		if(rx_buffer_new_index != rx_buffer_old_index) {		/* Simple check in receiving data */
-			if (rx_buffer_new_index > rx_buffer_old_index) { 	/* Normal FIFO mode */
-				//Fill inside the received_frame struct
-				struct_for_queue.start_index = circular_buf_lora_incoming.head;
-				struct_for_queue.length = rx_buffer_new_index - rx_buffer_old_index;
-				if(circular_write(&circular_buf_lora_incoming, (lora_rx_dma_buffer + rx_buffer_old_index), rx_buffer_new_index - rx_buffer_old_index) == CIRC_WRITE_SUCCESS){
-					if(xQueueSend(lora_rx_qHandle, (void *) &struct_for_queue, (TickType_t) 10) != pdPASS){	//Try sending to queue
-						// If sending queue is failed, then remove the written buffer from circular buffer
-						circular_buf_lora_incoming.remaining_length += struct_for_queue.length;
-						circular_buf_lora_incoming.head = struct_for_queue.start_index;
-#if SERIAL_DEBUG
-						// Failed to post the message, even after 10 ticks.
-						memset(text, 0, 100);
-						sprintf((char *) text, "Too busy... Failed to send to pc_rx_qHandle\n");
-						HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-#endif
-					}
-					else {	//Sending queue is successful
-#if SERIAL_DEBUG
-						memset(text, 0, 100);
-						sprintf((char *) text, "Queue sent start_index:%d length:%d\n", (int) struct_for_queue.start_index, (int) struct_for_queue.length);
-						HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-#endif
-					}
-				}
-				else {	// Not enough length in circular buffer for new commands
-#if SERIAL_DEBUG
-					memset(text, 0, 100);
-					sprintf((char *) text, "Not enough length in circular buffer for new commands\n");
-					HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-#endif
-				}
-			}
-			else {	/* Overflow FIFO mode */
-				if(circular_buf_lora_incoming.remaining_length >= (LORA_RX_DMA_BUFFER_LEN - rx_buffer_old_index + rx_buffer_new_index)) {	/* Check if the circular buffer is empty enough */
-					//Fill inside the received_frame struct
-					struct_for_queue.start_index = circular_buf_lora_incoming.head;
-					struct_for_queue.length = LORA_RX_DMA_BUFFER_LEN - rx_buffer_old_index + rx_buffer_new_index;
-					/* First process the data end of the buffer */
-					circular_write(&circular_buf_lora_incoming, (lora_rx_dma_buffer + rx_buffer_old_index), LORA_RX_DMA_BUFFER_LEN - rx_buffer_old_index);
-					if (rx_buffer_new_index > 0) {/* If remains, process the data beginning of the buffer */
-						circular_write(&circular_buf_lora_incoming, lora_rx_dma_buffer, rx_buffer_new_index);
-					}
-
-					if(xQueueSend(lora_rx_qHandle, (void *) &struct_for_queue, (TickType_t) 10) != pdPASS){	//Try sending to queue
-#if SERIAL_DEBUG
-						// Failed to post the message, even after 10 ticks.
-						memset(text, 0, 100);
-						sprintf((char *) text, "Too busy... Failed to send to lora_rx_qHandle\n");
-						HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-#endif
-					}
-				}
-				else {// Not enough length in circular buffer for new commands
-#if SERIAL_DEBUG
-					memset(text, 0, 100);
-					sprintf((char *) text, "Not enough length in circular buffer for new commands\n");
-					HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
-#endif
-				}
-			}
-		}
-
-		rx_buffer_old_index = rx_buffer_new_index;
-		// If DMA counter is at the end of the buffer, set it to 0
-		if (rx_buffer_old_index == LORA_RX_DMA_BUFFER_LEN) {
-			rx_buffer_old_index = 0;
-		}
-	}
+  /* USER CODE BEGIN LORARxManager */
+  /* Infinite loop */
+  for(;;)
+  {
+	  send_message_with_lora("lora\n");
+    osDelay(1000);
+  }
+  /* USER CODE END LORARxManager */
 }
 
-/**
- * @brief Function implementing the loraTxManager thread.
- * @param argument: Not used
- * @retval None
- */
 void LORATxManager(void const * argument)
 {
 	uart_data_t task_received;
@@ -161,7 +76,7 @@ void LORATxManager(void const * argument)
 	for(;;)
 	{
 		xQueueReceive(lora_tx_qHandle, (void *) &task_received, osWaitForever);
-		if(circular_read_from(&circular_buf_to_lora_outgoing, received_command, task_received.start_index, task_received.length) == CIRC_READ_SUCCESS) {
+		if(circular_read_from(&circular_buf_to_lora, received_command, task_received.start_index, task_received.length) == CIRC_READ_SUCCESS) {
 			//Taking CRC of payload (preamble is not included)
 			crc = crc8((const char *)received_command, task_received.length);
 
@@ -178,14 +93,50 @@ void LORATxManager(void const * argument)
 	}
 }
 
-/**
- * @brief Parses and processes the incoming data from Lora
- * @param argument: Not used
- * @retval None
- */
 void LORACommunicationManager(void const * argument)
 {
-	for(;;)
-	{
+  /* USER CODE BEGIN LORACommunicationManager */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END LORACommunicationManager */
+}
+
+
+/**
+ * @brief Send a message via LORA to ground station with
+ * this function. It handles the parsing and transmitting processes.
+ * @param format: message format to be sent
+ * @retval None
+ */
+void send_message_with_lora(const char * buffer )
+{
+	uart_data_t struct_for_queue;
+	//Fill inside the received_frame struct
+	struct_for_queue.start_index = circular_buf_to_lora.head;
+	struct_for_queue.length = strlen(buffer);
+	if(circular_write(&circular_buf_to_lora, (const uint8_t *) buffer, strlen(buffer)) == CIRC_WRITE_SUCCESS){
+		if(xQueueSend(lora_tx_qHandle, (void *) &struct_for_queue, (TickType_t) 10) != pdPASS){	//Try sending to queue
+			// If sending queue is failed, then remove the written buffer from circular buffer
+			circular_buf_to_lora.remaining_length += struct_for_queue.length;
+			circular_buf_to_lora.head = struct_for_queue.start_index;
+#if SERIAL_DEBUG
+			uint8_t text[50];
+			// Failed to post the message, even after 10 ticks.
+			memset(text, 0, 50);
+			sprintf((char *) text, "Too busy... Failed to send to lora_tx_qHandle\n");
+			HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+		}
+		else {	//Sending queue is successful
+#if 0
+			uint8_t text[50];
+			memset(text, 0, 50);
+			sprintf((char *) text, "Queue to LORA sent start_index:%d length:%d\n", (int) struct_for_queue.start_index, (int) struct_for_queue.length);
+			HAL_UART_Transmit(&HUART_PC, (uint8_t *) text, strlen((const char *)text), 0xFF);
+#endif
+		}
 	}
 }

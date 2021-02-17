@@ -244,6 +244,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  //Setting LORA to normal mode
+  HAL_GPIO_WritePin(LORA_M0_GPIO_Port, LORA_M0_Pin, 0);
+  HAL_GPIO_WritePin(LORA_M1_GPIO_Port, LORA_M1_Pin, 0);
 	HAL_NVIC_SetPriority(TIM4_IRQn, 15, 0);	/* IRQ priority of system timer is set to lowest */
 	HAL_UART_Transmit(&HUART_PC, (uint8_t *) "init", 4, 0xFF);
   /* USER CODE END RTOS_THREADS */
