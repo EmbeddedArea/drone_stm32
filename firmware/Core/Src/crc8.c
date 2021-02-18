@@ -1,15 +1,33 @@
-/*
- * crc8.c
- *
- *  Created on: 26 Oca 2021
- *      Author: Azad
+/**
+ ********************************************************************************
+ * @file    crc8.c
+ * @author  Embedded Area
+ * @date    Jan 26, 2021
+ * @brief
+ ********************************************************************************
  */
 
+/************************************
+ * INCLUDES
+ ************************************/
 #include "crc8.h"
 
-const unsigned char CRC7_POLY = 0x07;
+/************************************
+ * EXTERN VARIABLES
+ ************************************/
 
-const uint8_t crcTable[] = { 0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
+/************************************
+ * PRIVATE MACROS AND DEFINES
+ ************************************/
+
+/************************************
+ * PRIVATE TYPEDEFS
+ ************************************/
+
+/************************************
+ * STATIC VARIABLES
+ ************************************/
+static const uint8_t crcTable[] = { 0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
 		0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65, 0x48, 0x4F, 0x46, 0x41, 0x54, 0x53, 0x5A, 0x5D,
 		0xE0, 0xE7, 0xEE, 0xE9, 0xFC, 0xFB, 0xF2, 0xF5, 0xD8, 0xDF, 0xD6, 0xD1, 0xC4, 0xC3, 0xCA, 0xCD,
 		0x90, 0x97, 0x9E, 0x99, 0x8C, 0x8B, 0x82, 0x85, 0xA8, 0xAF, 0xA6, 0xA1, 0xB4, 0xB3, 0xBA, 0xBD,
@@ -26,6 +44,21 @@ const uint8_t crcTable[] = { 0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x3
 		0xAE, 0xA9, 0xA0, 0xA7, 0xB2, 0xB5, 0xBC, 0xBB, 0x96, 0x91, 0x98, 0x9F, 0x8A, 0x8D, 0x84, 0x83,
 		0xDE, 0xD9, 0xD0, 0xD7, 0xC2, 0xC5, 0xCC, 0xCB, 0xE6, 0xE1, 0xE8, 0xEF, 0xFA, 0xFD, 0xF4, 0xF3};
 
+/************************************
+ * GLOBAL VARIABLES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTION PROTOTYPES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTIONS
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTIONS
+ ************************************/
 /**crc8
  * @brief Calculates the crc of the message
  * @param message: address of message
@@ -37,12 +70,12 @@ uint8_t crc8(const char *message, uint16_t len) {
 	uint8_t remainder = 0;
 
 	/* Divide the message by the polynomial, a byte at a time. */
-	 for (int byte = 0; byte < len; ++byte) {
-		 data = message[byte] ^ (remainder >> 0);
-		 remainder = crcTable[data] ^ (remainder << 8);
-	 }
+	for (int byte = 0; byte < len; ++byte) {
+		data = message[byte] ^ (remainder >> 0);
+		remainder = crcTable[data] ^ (remainder << 8);
+	}
 
-	 /* The final remainder is the CRC. */
-	 return (remainder);
+	/* The final remainder is the CRC. */
+	return (remainder);
 }
 

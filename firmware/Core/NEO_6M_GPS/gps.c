@@ -1,113 +1,149 @@
-/*
- * gps.c
- *
- *  Created on: Jan 9, 2021
- *      Author: Sefa
+/**
+ ********************************************************************************
+ * @file    gps.c
+ * @author  Embedded Area
+ * @date    Jan 9, 2021
+ * @brief
+ ********************************************************************************
  */
 
+/************************************
+ * INCLUDES
+ ************************************/
 #include "gps.h"
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
 
+/************************************
+ * EXTERN VARIABLES
+ ************************************/
+
+/************************************
+ * PRIVATE MACROS AND DEFINES
+ ************************************/
+
+/************************************
+ * PRIVATE TYPEDEFS
+ ************************************/
+
+/************************************
+ * STATIC VARIABLES
+ ************************************/
 
 #if GPRMC_FRAME_PARSE_ON
 static const gps_infoType_t typeTableGPRMC[GPRMC_FRAME_BUFFER_SIZE] = {
-	GPS_FLOAT_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_FLOAT_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_FLOAT_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_FLOAT_TYPE,
-	GPS_FLOAT_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_CHARACTER_TYPE	
+		GPS_FLOAT_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_FLOAT_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_FLOAT_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_FLOAT_TYPE,
+		GPS_FLOAT_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_CHARACTER_TYPE
 };
 #endif
 
 #if GPVTG_FRAME_PARSE_ON
 
 static const gps_infoType_t typeTableGPVTG[GPVTG_FRAME_BUFFER_SIZE] = {
-	GPS_INTEGER_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_CHARACTER_TYPE
+		GPS_INTEGER_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_CHARACTER_TYPE
 };
 #endif
 
 #if GPGGA_FRAME_PARSE_ON
 static const gps_infoType_t typeTableGPGGA[GPGGA_FRAME_BUFFER_SIZE] = {
-	GPS_FLOAT_TYPE,
-	GPS_FLOAT_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_FLOAT_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE
+		GPS_FLOAT_TYPE,
+		GPS_FLOAT_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_FLOAT_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE
 };
 #endif
 
 #if GPGSA_FRAME_PARSE_ON
 static const gps_infoType_t typeTableGPGSA[GPGSA_FRAME_BUFFER_SIZE] = {
-	GPS_CHARACTER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE
+		GPS_CHARACTER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE
 };
 #endif
 
 #if GPGSV_FRAME_PARSE_ON
 static const gps_infoType_t typeTableGPGSV[GPGSV_FRAME_BUFFER_SIZE] = {
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE,
-	GPS_INTEGER_TYPE
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE,
+		GPS_INTEGER_TYPE
 };
 
 #endif
 
 #if GPGLL_FRAME_PARSE_ON
 static const gps_infoType_t typeTableGPGLL[GPGLL_FRAME_BUFFER_SIZE] = {
-	GPS_FLOAT_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_FLOAT_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_FLOAT_TYPE,
-	GPS_CHARACTER_TYPE,
-	GPS_CHARACTER_TYPE
+		GPS_FLOAT_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_FLOAT_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_FLOAT_TYPE,
+		GPS_CHARACTER_TYPE,
+		GPS_CHARACTER_TYPE
 };
 #endif
+
+/************************************
+ * GLOBAL VARIABLES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTION PROTOTYPES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTIONS
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTIONS
+ ************************************/
 
 /**
  *
@@ -137,7 +173,7 @@ size_t gps_findIndex(uint8_t * str, size_t size, size_t startIndex, uint8_t valu
  * @return
  */
 size_t gps_findXthIndex(uint8_t * str, size_t size, size_t startIndex, uint8_t value, uint8_t Xth){
-	
+
 	size_t nextStartIndex = startIndex;
 	uint8_t count = 0;
 	do{
@@ -148,7 +184,7 @@ size_t gps_findXthIndex(uint8_t * str, size_t size, size_t startIndex, uint8_t v
 		++count;
 		++nextStartIndex;	
 	}while(count != Xth);	
-	
+
 	return nextStartIndex - 1;	
 }
 
@@ -181,7 +217,7 @@ gps_Status_t gps_controlChecksum(uint8_t * str, size_t size, size_t startIndex){
  * @return
  */
 int32_t gps_findAdress(uint8_t * str, size_t size, size_t startIndex, gps_addressIdentifier_t address){
-	
+
 	size_t i = startIndex;
 	gps_addressIdentifier_t result;
 	do{
@@ -192,7 +228,7 @@ int32_t gps_findAdress(uint8_t * str, size_t size, size_t startIndex, gps_addres
 		result = str[i + 3] + str[i + 4] + str[i + 5];
 		++i;
 	}while(address != result);		
-	
+
 	return (i - 1);
 }
 
@@ -223,7 +259,7 @@ float gps_floatAscii2num(uint8_t * str, size_t startIndex, size_t endIndex){
 
 	float sum = 0.0f;
 	uint8_t float_flag = 0, float_index;
-	
+
 	for(size_t i = 0; i < endIndex - startIndex + 1 ; i++){
 		if(str[endIndex - i] == FLOAT_SEPERATION_INDICATOR){
 			float_flag = 1;
@@ -238,9 +274,9 @@ float gps_floatAscii2num(uint8_t * str, size_t startIndex, size_t endIndex){
 				sum = sum + (float) ((str[endIndex - i] - '0') * pow(10, i - 1 - float_index));
 			}
 		}
-		
+
 	}
-	
+
 	return (float) sum;
 }
 
@@ -297,7 +333,7 @@ gps_infoType_t * gps_getTable(gps_addressIdentifier_t address){
 gps_infoData_t gps_getData(uint8_t * str, size_t startIndex, size_t endIndex, gps_infoType_t * address, uint8_t index){
 
 	gps_infoData_t tmp;
-		
+
 	switch(address[index - 1]){
 	case GPS_FLOAT_TYPE:	
 		tmp.typeOfData = GPS_FLOAT_TYPE;
@@ -327,16 +363,16 @@ gps_infoData_t gps_getData(uint8_t * str, size_t startIndex, size_t endIndex, gp
  * @return
  */
 gps_infoData_t gps_getInfo(uint8_t * str, size_t size, gps_addressIdentifier_t address, uint8_t index){
-	
+
 	size_t firstIndex, lastIndex; 
-		
+
 	firstIndex = gps_findAdress(str, size, 0, address);	
-/*	if(GPS_VALID_CHECKSUM != gps_controlChecksum(str, size, firstIndex)){
+	/*	if(GPS_VALID_CHECKSUM != gps_controlChecksum(str, size, firstIndex)){
 			gps_infoData_t tmp;
 			tmp.typeOfData = GPS_INFO_ERROR;
 			return tmp;
 	}
-*/		
+	 */
 	firstIndex = gps_findXthIndex(str, size, firstIndex, VALUE_SEPERATOR_HEXADECIMAL, index);
 	lastIndex = gps_findIndex(str, size, firstIndex + 1, VALUE_SEPERATOR_HEXADECIMAL);		
 	gps_infoType_t * addressTable = gps_getTable(address);

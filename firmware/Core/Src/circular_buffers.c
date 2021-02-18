@@ -1,16 +1,51 @@
 /**
- ******************************************************************************
- * @file           circular_buffers.c
- * @brief          Contains circular buffer implementation, related functions
+ ********************************************************************************
+ * @file    circular_buffers.c
+ * @author  Embedded Area
+ * @date    2020
+ * @brief   Contains circular buffer implementation, related functions
  * and global variables.
- * @author 		Azad Karataş
- ******************************************************************************
+ ********************************************************************************
  */
 
-/* Includes ------------------------------------------------------------------*/
+/************************************
+ * INCLUDES
+ ************************************/
 #include "main.h"
 #include "string.h"
 #include "circular_buffers.h"
+
+/************************************
+ * EXTERN VARIABLES
+ ************************************/
+
+/************************************
+ * PRIVATE MACROS AND DEFINES
+ ************************************/
+
+/************************************
+ * PRIVATE TYPEDEFS
+ ************************************/
+
+/************************************
+ * STATIC VARIABLES
+ ************************************/
+
+/************************************
+ * GLOBAL VARIABLES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTION PROTOTYPES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTIONS
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTIONS
+ ************************************/
 
 /**
  * @brief This function writes the given buffer to the circular buffer at a number of size
@@ -34,7 +69,6 @@ circular_status_t circular_write(circular_buffers_t *circular, const uint8_t *so
 		return CIRC_WRITE_ERR_NO_SPACE;
 	}
 }
-
 
 /**
  * @brief This function reads the circular buffer and copies to the dest buffer at a number of size
@@ -70,5 +104,3 @@ circular_status_t circular_read_from(circular_buffers_t *circular, uint8_t *dest
 	} while(--size != 0);
 	return CIRC_READ_SUCCESS;
 }
-
-

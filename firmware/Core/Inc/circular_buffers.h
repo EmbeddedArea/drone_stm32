@@ -1,13 +1,30 @@
 /**
-  ******************************************************************************
-  * @file           circular_buffers.h
-  * @brief          Contains circular buffer implementation and related functions
-  * @author 		Azad Karataş
-  ******************************************************************************
-  */
+ ********************************************************************************
+ * @file    circular_buffers.h.h
+ * @author  Embedded Area
+ * @date    2020
+ * @brief	Contains circular buffer implementation and related functions
+ ********************************************************************************
+ */
 
 #ifndef INC_CIRCULAR_BUFFERS_H_
 #define INC_CIRCULAR_BUFFERS_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/************************************
+ * INCLUDES
+ ************************************/
+
+/************************************
+ * MACROS AND DEFINES
+ ************************************/
+
+/************************************
+ * TYPEDEFS
+ ************************************/
 
 /**
  * Circular buffer result types
@@ -31,7 +48,13 @@ typedef struct {
 	uint8_t *data;				/** address of the array used for storing data*/
 } circular_buffers_t;
 
+/************************************
+ * EXPORTED VARIABLES
+ ************************************/
 
+/************************************
+ * GLOBAL FUNCTION PROTOTYPES
+ ************************************/
 /**
  * @brief This function writes the given buffer to the circular buffer at a number of size
  * Writing starts from head
@@ -63,4 +86,9 @@ circular_status_t circular_read(circular_buffers_t *circular, uint8_t *dest_buff
  */
 circular_status_t circular_read_from(circular_buffers_t *circular, uint8_t *dest_buffer, uint32_t starting_index, uint32_t size);
 
-#endif /* INC_CIRCULAR_BUFFERS_H_ */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

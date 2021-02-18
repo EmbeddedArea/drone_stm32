@@ -1,15 +1,26 @@
-/*
- * drone_infos.h
- *
- *  Created on: 23 Eki 2020
- *      Author: Azad
+/**
+ ********************************************************************************
+ * @file    drone_infos.h
+ * @author  Embedded Area
+ * @date    Jan 1, 2021
+ * @brief
+ ********************************************************************************
  */
-
 #ifndef INC_DRONE_INFOS_H_
 #define INC_DRONE_INFOS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/************************************
+ * INCLUDES
+ ************************************/
 #include "stdint.h"
 
+/************************************
+ * MACROS AND DEFINES
+ ************************************/
 /*
  * Message Format and Indices
  * |address|type|control=CTRL_MOTOR_PWM_VALUES|motorSolAnalog|motorSa�AnalogDikey|motorSa�AnalogYatay|crc(2 byte)
@@ -29,12 +40,15 @@
 #define LORA_RX_MOT_A						7	// Sag analog yatay eksen
 
 //DRONE ID ADDRESS
-#define DRONE_ID 0x49	//Gelen mesaj�n ilk byte'� drone ID bilgisidir (ADDRESS BYTE)
+#define DRONE_ID 	0x49	// First byte of the incoming message is drone ID (ADDRESS BYTE)
 
+/************************************
+ * TYPEDEFS
+ ************************************/
 //LORA MESSAGE FORMATS
 typedef enum{
 	ADVERTISING_DATA	= 0x00,
-	PERIODIC_DATA		= 0x0A,	//Kumanda datalar� ve di�er normal datalar�n oldu�u mesaj
+	PERIODIC_DATA		= 0x0A,	// Normal remote controller and sensor data
 	CRITICAL_DATA		= 0x0B
 }lora_msg_type_t;
 
@@ -51,18 +65,16 @@ typedef enum{
 	TAKLA_AT	= 3
 }lora_special_motor_movement_t;
 
-
 /*************************************
- * DRONEUN ���NDE BULUNDU�U DURUMLAR
+ * DRONE STATES
  *************************************/
 typedef enum{
-	STATE_INITIAL, //Power�n ilk verildi�i b�t�n motorlar�n kapal� oldu�u durum
+	STATE_INITIAL,
 	STATE_MOTORS_OFF,
 	STATE_ACTIVELY_CONTROLLED_BY_USER,
 	STATE_STAYING_STILL,
 	STATE_TURNING_RIGHT,
 	STATE_TURNING_LEFT,
-	STATE_TAKLA_ATARKEN,
 	STATE_RETURNING_HOME
 }drone_current_state_t;
 
@@ -74,4 +86,18 @@ typedef struct{
 	volatile uint32_t *mot3_pwm;
 	volatile uint32_t *mot4_pwm;
 }Drone;
-#endif /* INC_DRONE_INFOS_H_ */
+
+/************************************
+ * EXPORTED VARIABLES
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTION PROTOTYPES
+ ************************************/
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

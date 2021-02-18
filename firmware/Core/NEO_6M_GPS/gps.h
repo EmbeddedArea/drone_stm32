@@ -1,27 +1,42 @@
-/*
- * gps.h
- *
- *  Created on: Jan 9, 2021
- *      Author: Sefa
+/**
+ ********************************************************************************
+ * @file    gps.h
+ * @author  Embedded Area
+ * @date    Jan 9, 2021
+ * @brief
+ ********************************************************************************
  */
 
 #ifndef INC_GPS_H_
 #define INC_GPS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/************************************
+ * INCLUDES
+ ************************************/
 #include <stddef.h>
 #include <stdint.h>
 #include "gps_conf.h"
 
+/************************************
+ * MACROS AND DEFINES
+ ************************************/
 #define VALUE_SEPERATOR_HEXADECIMAL 		0x2C
 #define ADDRESS_INDICATOR					0x24
 #define CHECKSUM_INDICATOR					0x2A
 #define FLOAT_SEPERATION_INDICATOR			0x2E
 
+/************************************
+ * TYPEDEFS
+ ************************************/
 typedef enum{
-GPS_FLOAT_TYPE = 0,
-GPS_INTEGER_TYPE,
-GPS_CHARACTER_TYPE,
-GPS_INFO_ERROR	
+	GPS_FLOAT_TYPE = 0,
+	GPS_INTEGER_TYPE,
+	GPS_CHARACTER_TYPE,
+	GPS_INFO_ERROR
 }gps_infoType_t;
 
 typedef struct{
@@ -153,6 +168,13 @@ typedef enum{
 	GPS_GPGLL = 'G' + 'L' + 'L',
 }gps_addressIdentifier_t;
 
+/************************************
+ * EXPORTED VARIABLES
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTION PROTOTYPES
+ ************************************/
 size_t gps_findIndex(uint8_t * str, size_t size, size_t startIndex, uint8_t value);
 size_t gps_findXthIndex(uint8_t * str, size_t size, size_t startIndex, uint8_t value, uint8_t Xth);
 gps_Status_t gps_controlChecksum(uint8_t * str, size_t size, size_t startIndex);
@@ -164,5 +186,9 @@ gps_infoType_t * gps_getTable(gps_addressIdentifier_t address);
 gps_infoData_t gps_getData(uint8_t * str, size_t startIndex, size_t endIndex, gps_infoType_t * address, uint8_t index);
 gps_infoData_t gps_getInfo(uint8_t * str, size_t size, gps_addressIdentifier_t address, uint8_t index);
 
-#endif /* INC_GPS_H_ */
 
+#ifdef __cplusplus
+}
+#endif
+
+#endif

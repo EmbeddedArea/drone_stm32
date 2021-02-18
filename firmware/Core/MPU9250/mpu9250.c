@@ -1,26 +1,40 @@
-/*
- * mpu9250.c
- *
- *  Created on: 10 Oca 2021
- *      Author: Azad Karataş
+/**
+ ********************************************************************************
+ * @file    mpu9250.c
+ * @author  Embedded Area
+ * @date    Jan 10, 2021
+ * @brief
+ ********************************************************************************
  */
 
-/*********************
- *      INCLUDES
- *********************/
+/************************************
+ * INCLUDES
+ ************************************/
 #include "../MPU9250/mpu9250.h"
-
 #include "stdlib.h"
 #include "cmsis_os.h"
 
-/**********************
- *  EXTERN VARIABLES
- **********************/
+/************************************
+ * EXTERN VARIABLES
+ ************************************/
 extern osSemaphoreId mpu9265_smphrHandle;
 
-/******************************
- *  GLOBAL & STATIC VARIABLES
- ******************************/
+/************************************
+ * PRIVATE MACROS AND DEFINES
+ ************************************/
+
+/************************************
+ * PRIVATE TYPEDEFS
+ ************************************/
+
+/************************************
+ * STATIC VARIABLES
+ ************************************/
+
+/************************************
+ * GLOBAL VARIABLES
+ ************************************/
+
 // track success of interacting with sensor
 int _status;
 
@@ -88,16 +102,17 @@ float _hys = 1.0f;
 float _hzs = 1.0f;
 float _avgs;
 
-// constants
-
-
-/*************************
- *  STATIC FUNCTION PROTOTYPES
- *************************/
+/************************************
+ * STATIC FUNCTION PROTOTYPES
+ ************************************/
 static int writeRegister(uint8_t subAddress, uint8_t data);
 static int readRegisters(uint8_t subAddress, uint8_t count, uint8_t* dest);
 static int writeAK8963Register(uint8_t subAddress, uint8_t data);
 static int readAK8963Registers(uint8_t subAddress, uint8_t count, uint8_t* dest);
+
+/************************************
+ * STATIC FUNCTIONS
+ ************************************/
 
 /**
  *
@@ -196,6 +211,9 @@ static int readAK8963Registers(uint8_t subAddress, uint8_t count, uint8_t* dest)
 	return readRegisters(EXT_SENS_DATA_00, count, dest);
 }
 
+/************************************
+ * GLOBAL FUNCTIONS
+ ************************************/
 
 /**MPU9250_WhoAmI
  *

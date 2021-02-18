@@ -1,14 +1,26 @@
-/*
- * gps.h
- *
- *  Created on: Jan 9, 2021
- *      Author: Sefa
+/**
+ ********************************************************************************
+ * @file    gps_conf.h
+ * @author  Embedded Area
+ * @date    Jan 9, 2021
+ * @brief
+ ********************************************************************************
  */
 
 #ifndef INC_GPS_CONF_H_
 #define INC_GPS_CONF_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/************************************
+ * INCLUDES
+ ************************************/
+
+/************************************
+ * MACROS AND DEFINES
+ ************************************/
 #define GPRMC_FRAME_PARSE_ON_DEFINED
 #ifdef GPRMC_FRAME_PARSE_ON_DEFINED
 #define GPRMC_FRAME_PARSE_ON 1
@@ -51,5 +63,21 @@
 #define GPGLL_FRAME_PARSE_ON 0
 #endif
 
+/************************************
+ * TYPEDEFS
+ ************************************/
 
-#endif /* INC_GPS_CONF_H_ */
+/************************************
+ * EXPORTED VARIABLES
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTION PROTOTYPES
+ ************************************/
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

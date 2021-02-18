@@ -1,31 +1,48 @@
 /**
- ******************************************************************************
- * @file           LORA.c
- * @brief          Contains tasks related with LORA communication
- ******************************************************************************
+ ********************************************************************************
+ * @file    LORA.c
+ * @author  Embedded Area
+ * @date    2021
+ * @brief   Contains tasks related with LORA communication
+ ********************************************************************************
  */
 
-/* Includes ------------------------------------------------------------------*/
+/************************************
+ * INCLUDES
+ ************************************/
 #include "main.h"
 #include "cmsis_os.h"
 #include "crc8.h"
 #include "string.h"
 #include "drone_infos.h"
 
+/************************************
+ * EXTERN VARIABLES
+ ************************************/
 extern osThreadId loraRxManagerHandle, loraTxManagerHandle, loraCommManagerHandle;
 extern osMessageQId lora_tx_qHandle;	/** Queue for TX synchronization */
 extern osMessageQId lora_rx_qHandle;	/** Queue for RX synchronization */
 extern osSemaphoreId lora_rx_smphrHandle, lora_tx_smphrHandle;
 
-uint8_t lora_rx_dma_buffer[LORA_RX_DMA_BUFFER_LEN]; 			/** \brief An array for storing data coming from Lora DMA */
+/************************************
+ * PRIVATE MACROS AND DEFINES
+ ************************************/
 
-uint8_t lora_incoming_circular[LORA_CIRCULAR_BUFFER_SIZE]; 	/** \brief Static array for storing data coming from Lora */
-uint8_t lora_outgoing_circular[LORA_CIRCULAR_BUFFER_SIZE]; 	/** \brief Static array for writing data to Lora */
+/************************************
+ * PRIVATE TYPEDEFS
+ ************************************/
+
+/************************************
+ * STATIC VARIABLES
+ ************************************/
+static uint8_t lora_rx_dma_buffer[LORA_RX_DMA_BUFFER_LEN]; 			/** \brief An array for storing data coming from Lora DMA */
+static uint8_t lora_incoming_circular[LORA_CIRCULAR_BUFFER_SIZE]; 	/** \brief Static array for storing data coming from Lora */
+static uint8_t lora_outgoing_circular[LORA_CIRCULAR_BUFFER_SIZE]; 	/** \brief Static array for writing data to Lora */
 
 /**
  * circular_buf_lora_incoming
  */
-circular_buffers_t circular_buf_from_lora = {
+static circular_buffers_t circular_buf_from_lora = {
 		.size = LORA_CIRCULAR_BUFFER_SIZE,
 		.head = 0,
 		.tail = 0,
@@ -36,7 +53,7 @@ circular_buffers_t circular_buf_from_lora = {
 /**
  * circular_buf_to_lora_outgoing
  */
-circular_buffers_t circular_buf_to_lora = {
+static circular_buffers_t circular_buf_to_lora = {
 		.size = LORA_CIRCULAR_BUFFER_SIZE,
 		.head = 0,
 		.tail = 0,
@@ -44,6 +61,21 @@ circular_buffers_t circular_buf_to_lora = {
 		.data = lora_outgoing_circular
 };
 
+/************************************
+ * GLOBAL VARIABLES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTION PROTOTYPES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTIONS
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTIONS
+ ************************************/
 
 /**
  * @brief Function implementing the loraRxManager thread.

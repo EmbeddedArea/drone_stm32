@@ -1,8 +1,10 @@
-/*
- * mpu.h
- *
- *  Created on: 10 Oca 2021
- *      Author: Azad Karataş
+/**
+ ********************************************************************************
+ * @file    mpu9250.h
+ * @author  Embedded Area
+ * @date    Jan 10, 2021
+ * @brief
+ ********************************************************************************
  */
 
 #ifndef INC_MPU_H_
@@ -12,10 +14,9 @@
 extern "C" {
 #endif
 
-
-/*********************
- *      INCLUDES
- *********************/
+/************************************
+ * INCLUDES
+ ************************************/
 #include "main.h"
 #include "stdint.h"
 #include "cmsis_os.h"
@@ -23,10 +24,9 @@ extern "C" {
 
 extern I2C_HandleTypeDef hi2c1;
 
-
-/**********************
- *      MACROS and DEFINES
- **********************/
+/************************************
+ * MACROS AND DEFINES
+ ************************************/
 #define delay(x) (osDelay(x))
 
 #define MPU9250_I2C			hi2c1
@@ -35,7 +35,6 @@ extern I2C_HandleTypeDef hi2c1;
 #define GRAVITY  			(9.807f)
 #define DEGREE_TO_RADIAN  	(3.14159265359f/180.0f)
 #define RADIANS_TO_DEGREES  (180.0f/3.14159265359f)
-
 
 /*********************
  *     REGISTERS
@@ -121,10 +120,9 @@ extern I2C_HandleTypeDef hi2c1;
 #define AK8963_ASA   		0x10
 #define AK8963_WHO_AM_I   	0x00
 
-
-/**********************
- *      TYPEDEFS
- **********************/
+/************************************
+ * TYPEDEFS
+ ************************************/
 
 /**
  * Gyroscope Features
@@ -181,9 +179,13 @@ typedef enum
 } mpu_sample_rate_divider_t;
 
 
-/*************************
- *  FUNCTION PROTOTYPES
- *************************/
+/************************************
+ * EXPORTED VARIABLES
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTION PROTOTYPES
+ ************************************/
 int MPU9250_WhoAmI();
 int MPU9250_WhoAmIAK8963();
 
@@ -218,7 +220,9 @@ void setGyroBiasZ_rads(float bias);
 
 void ComplementaryFilter(float *pitch, float *roll, uint32_t deltaT);
 
+
 #ifdef __cplusplus
 }
 #endif
-#endif /* INC_MPU_H_ */
+
+#endif

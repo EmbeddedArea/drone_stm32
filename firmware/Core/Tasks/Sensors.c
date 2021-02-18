@@ -1,11 +1,15 @@
 /**
- ******************************************************************************
- * @file           Sensors.c
- * @brief          Contains tasks related with sensor readings and usings
- ******************************************************************************
+ ********************************************************************************
+ * @file    Sensors.c
+ * @author  Embedded Area
+ * @date    2021
+ * @brief   Contains tasks related with sensor readings and usings
+ ********************************************************************************
  */
 
-/* Includes ------------------------------------------------------------------*/
+/************************************
+ * INCLUDES
+ ************************************/
 #include "main.h"
 #include "math.h"
 #include "../MPU9250/mpu9250.h"
@@ -13,9 +17,40 @@
 #include "string.h"
 #include "stdio.h"
 
+/************************************
+ * EXTERN VARIABLES
+ ************************************/
 extern DMA_HandleTypeDef hdma_i2c1_rx;
 extern osSemaphoreId mpu9265_smphrHandle;
 extern osThreadId gpsTaskHandle, mpu9265TaskHandle, batteryTaskHandle;
+
+/************************************
+ * PRIVATE MACROS AND DEFINES
+ ************************************/
+
+/************************************
+ * PRIVATE TYPEDEFS
+ ************************************/
+
+/************************************
+ * STATIC VARIABLES
+ ************************************/
+
+/************************************
+ * GLOBAL VARIABLES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTION PROTOTYPES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTIONS
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTIONS
+ ************************************/
 
 /**
  * @brief Function implementing the gpsTask thread.

@@ -1,32 +1,47 @@
 /**
- ******************************************************************************
- * @file           PC_Comm.c
- * @brief          Contains tasks related with PC uart communication
- ******************************************************************************
+ ********************************************************************************
+ * @file    PC_Comm.c
+ * @author  Embedded Area
+ * @date    2021
+ * @brief   Contains tasks related with PC uart communication
+ ********************************************************************************
  */
 
-/* Includes ------------------------------------------------------------------*/
+/************************************
+ * INCLUDES
+ ************************************/
 #include "main.h"
 #include "cmsis_os.h"
 #include "string.h"
 #include "stdio.h"
 #include "circular_buffers.h"
 
-
+/************************************
+ * EXTERN VARIABLES
+ ************************************/
 extern osMessageQId pc_tx_qHandle;	/** Queue for TX synchronization */
 extern osMessageQId pc_rx_qHandle;	/** Queue for RX synchronization */
 extern osSemaphoreId pc_rx_smphrHandle;
 
+/************************************
+ * PRIVATE MACROS AND DEFINES
+ ************************************/
 
-uint8_t pc_rx_dma_buffer[PC_RX_DMA_BUFFER_LEN]; 			/** \brief An array for storing data coming from Uart DMA */
+/************************************
+ * PRIVATE TYPEDEFS
+ ************************************/
 
-uint8_t uart_pc_circular[PC_CIRCULAR_UART_BUFFER_SIZE]; 	/** \brief Static array for storing data coming from uart */
-uint8_t uart_to_pc_circular[PC_CIRCULAR_UART_BUFFER_SIZE]; 	/** \brief Static array for writing data to uart */
+/************************************
+ * STATIC VARIABLES
+ ************************************/
+static uint8_t pc_rx_dma_buffer[PC_RX_DMA_BUFFER_LEN]; 			/** \brief An array for storing data coming from Uart DMA */
+static uint8_t uart_pc_circular[PC_CIRCULAR_UART_BUFFER_SIZE]; 	/** \brief Static array for storing data coming from uart */
+static uint8_t uart_to_pc_circular[PC_CIRCULAR_UART_BUFFER_SIZE]; 	/** \brief Static array for writing data to uart */
 
 /**
  * circular_buf_pc
  */
-circular_buffers_t circular_buf_pc = {
+static circular_buffers_t circular_buf_pc = {
 		.size = PC_CIRCULAR_UART_BUFFER_SIZE,
 		.head = 0,
 		.tail = 0,
@@ -37,7 +52,7 @@ circular_buffers_t circular_buf_pc = {
 /**
  * circular_buf_to_pc
  */
-circular_buffers_t circular_buf_to_pc = {
+static circular_buffers_t circular_buf_to_pc = {
 		.size = PC_CIRCULAR_UART_BUFFER_SIZE,
 		.head = 0,
 		.tail = 0,
@@ -45,6 +60,21 @@ circular_buffers_t circular_buf_to_pc = {
 		.data = uart_to_pc_circular
 };
 
+/************************************
+ * GLOBAL VARIABLES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTION PROTOTYPES
+ ************************************/
+
+/************************************
+ * STATIC FUNCTIONS
+ ************************************/
+
+/************************************
+ * GLOBAL FUNCTIONS
+ ************************************/
 
 /**
  * @brief This function handles the parsing and transmitting processes.
@@ -204,7 +234,6 @@ void PCTxManager(void const * argument)
  * @param argument: Not used
  * @retval None
  */
-/* USER CODE END Header_PcCommunicationManager */
 void PcCommunicationManager(void const * argument)
 {
 	uint8_t received_command[30];
