@@ -99,7 +99,7 @@ void LORARxManager(void const * argument)
 	for(;;)
 	{
 		osSemaphoreWait(lora_rx_smphrHandle, osWaitForever);
-		send_message_with_lora("lora received\n");
+		//send_message_with_lora("lora received\n");
 		rx_buffer_new_index = LORA_RX_DMA_BUFFER_LEN - __HAL_DMA_GET_COUNTER(&HDMA_UART_LORA);
 		if(rx_buffer_new_index != rx_buffer_old_index) {		/* Simple check in receiving data */
 			if (rx_buffer_new_index > rx_buffer_old_index) { 	/* Normal FIFO mode */
@@ -240,7 +240,10 @@ void LORACommunicationManager(void const * argument)
 				break;
 			}
 			default:{	// Unknown command
-				send_message_to_pc("default case");
+				//send_message_to_pc("default case");
+				//send_message_to_pc(received_command);
+
+				HAL_UART_Transmit(&HUART_PC, (uint8_t *) received_command, msg_received.length, 0xFF);
 				break;
 			}
 			}
